@@ -82,18 +82,8 @@ func (m *Model) buildTableRows() []table.Row {
 		rows = append(rows, row)
 	}
 	
-	// Add sample data if no holdings
-	if len(rows) == 0 {
-		rows = append(rows, table.Row{
-			"Example",
-			"BTC",
-			"0.5",
-			"$42,000",
-			"$21,000",
-			"+2.3%",
-			"+$500",
-		})
-	}
+	// Return empty table if no holdings
+	// This will show the headers but no data rows
 	
 	return rows
 }

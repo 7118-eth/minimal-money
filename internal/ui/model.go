@@ -48,9 +48,8 @@ func InitialModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	// Load initial data
-	m.loadData()
-	return nil
+	// Return a command to load data
+	return m.loadDataCmd()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -125,6 +124,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err == nil && msg.prices != nil {
 			m.prices = msg.prices
 			m.updateTableData()
+		}
+		
+	case dataLoadedMsg:
+		m.accounts = msg.accounts
+		m.assets = msg.assets
+		m.holdings = msg.holdings
+		m.updateTableData()
+		// After loading data, fetch prices
+		if len(m.assets) > 0 {
+			return m, m.refreshPrices()
 		}
 	}
 
@@ -221,4 +230,32 @@ func (m Model) refreshPrices() tea.Cmd {
 type priceUpdateMsg struct {
 	prices map[uint]float64
 	err    error
+}
+
+type dataLoadedMsg struct {
+	accounts []models.Account
+	assets   []models.Asset
+	holdings []models.Holding
+}
+
+func (m Model) loadDataCmd() tea.Cmd {
+	return func() tea.Msg {
+		// Load accounts
+		accountRepo := repository.NewAccountRepository()
+		accounts, _ := accountRepo.GetAll()
+
+		// Load assets
+		assetRepo := repository.NewAssetRepository()
+		assets, _ := assetRepo.GetAll()
+
+		// Load holdings with relationships
+		holdingRepo := repository.NewHoldingRepository()
+		holdings, _ := holdingRepo.GetAll()
+
+		return dataLoadedMsg{
+			accounts: accounts,
+			assets:   assets,
+			holdings: holdings,
+		}
+	}
 }
