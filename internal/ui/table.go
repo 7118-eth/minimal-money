@@ -27,6 +27,10 @@ var (
 	totalStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("229"))
+	
+	assetRowStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("214"))
 )
 
 func (m *Model) setupTable() {
@@ -36,15 +40,13 @@ func (m *Model) setupTable() {
 		availableWidth = 80 // Minimum width
 	}
 	
-	// Distribute width proportionally
-	assetWidth := int(float64(availableWidth) * 0.15)
-	accountWidth := int(float64(availableWidth) * 0.35)
+	// Distribute width proportionally for new layout
+	assetAccountWidth := int(float64(availableWidth) * 0.45)
 	amountWidth := int(float64(availableWidth) * 0.25)
-	valueWidth := int(float64(availableWidth) * 0.25)
+	valueWidth := int(float64(availableWidth) * 0.30)
 	
 	columns := []table.Column{
-		{Title: "Asset", Width: assetWidth},
-		{Title: "Account", Width: accountWidth},
+		{Title: "Asset/Account", Width: assetAccountWidth},
 		{Title: "Amount", Width: amountWidth},
 		{Title: "Value", Width: valueWidth},
 	}
@@ -111,6 +113,29 @@ func (m *Model) buildTableRows() []table.Row {
 		holdings := assetHoldings[assetID]
 		asset := m.getAssetByID(assetID)
 		price := m.prices[assetID]
+		totalValue := assetTotalValues[assetID]
+		
+		// Calculate total amount for this asset
+		totalAmount := 0.0
+		for _, holding := range holdings {
+			totalAmount += holding.Amount
+		}
+		
+		// Format total amount based on asset type
+		amountStr := ""
+		if asset.Type == models.AssetTypeFiat {
+			amountStr = fmt.Sprintf("%.2f", totalAmount)
+		} else {
+			amountStr = fmt.Sprintf("%.4f", totalAmount)
+		}
+		
+		// Add asset header row
+		assetRow := table.Row{
+			asset.Symbol,
+			amountStr,
+			fmt.Sprintf("$%.2f", totalValue),
+		}
+		rows = append(rows, assetRow)
 		
 		// Sort holdings within each asset by value (highest first)
 		sort.Slice(holdings, func(i, j int) bool {
@@ -119,6 +144,7 @@ func (m *Model) buildTableRows() []table.Row {
 			return valueI > valueJ
 		})
 		
+		// Add account rows
 		for i, holding := range holdings {
 			account := m.getAccountByID(holding.AccountID)
 			value := holding.Amount * price
@@ -126,21 +152,22 @@ func (m *Model) buildTableRows() []table.Row {
 			// Determine tree character
 			var treeChar string
 			if i == len(holdings)-1 {
-				treeChar = "└─ "
+				treeChar = "  └─ "
 			} else {
-				treeChar = "├─ "
+				treeChar = "  ├─ "
 			}
 			
-			// First holding shows asset, others show tree continuation
-			assetDisplay := ""
-			if i == 0 {
-				assetDisplay = asset.Symbol
+			// Format amount based on asset type
+			amountStr := ""
+			if asset.Type == models.AssetTypeFiat {
+				amountStr = fmt.Sprintf("%.2f", holding.Amount)
+			} else {
+				amountStr = fmt.Sprintf("%.4f", holding.Amount)
 			}
 			
 			row := table.Row{
-				assetDisplay,
 				treeChar + account.Name,
-				fmt.Sprintf("%.4f", holding.Amount),
+				amountStr,
 				fmt.Sprintf("$%.2f", value),
 			}
 			rows = append(rows, row)
