@@ -24,6 +24,8 @@ type ModalState struct {
 	ActiveField   int
 	ShowError     bool
 	ErrorMessage  string
+	IsEdit        bool
+	EditingHoldingID uint
 }
 
 var (
@@ -71,6 +73,26 @@ func (m *Model) initAddAssetModal() {
 			{Label: "Purchase Price", Value: "", Placeholder: "e.g., 40000 (optional)"},
 		},
 		ActiveField: 0,
+		IsEdit: false,
+	}
+}
+
+func (m *Model) initEditAssetModal(holding models.Holding, account models.Account, asset models.Asset) {
+	purchasePrice := ""
+	if holding.PurchasePrice > 0 {
+		purchasePrice = fmt.Sprintf("%.2f", holding.PurchasePrice)
+	}
+	
+	m.modalState = ModalState{
+		Fields: []InputField{
+			{Label: "Account", Value: account.Name, Placeholder: "e.g., hardware wallet, NeoBank"},
+			{Label: "Asset", Value: asset.Symbol, Placeholder: "e.g., BTC, ETH, USD"},
+			{Label: "Amount", Value: fmt.Sprintf("%.6f", holding.Amount), Placeholder: "e.g., 0.5"},
+			{Label: "Purchase Price", Value: purchasePrice, Placeholder: "e.g., 40000 (optional)"},
+		},
+		ActiveField: 0,
+		IsEdit: true,
+		EditingHoldingID: holding.ID,
 	}
 }
 
@@ -177,19 +199,37 @@ func (m *Model) saveAsset() {
 		return
 	}
 
-	// Create holding
 	holdingRepo := repository.NewHoldingRepository()
-	holding := models.Holding{
-		AccountID:     account.ID,
-		AssetID:       asset.ID,
-		Amount:        amount,
-		PurchasePrice: purchasePrice,
-		PurchaseDate:  time.Now(),
-	}
-	if err := holdingRepo.Create(&holding); err != nil {
-		m.modalState.ShowError = true
-		m.modalState.ErrorMessage = "Failed to create holding"
-		return
+	
+	if m.modalState.IsEdit {
+		// Update existing holding
+		holding := models.Holding{
+			ID:            m.modalState.EditingHoldingID,
+			AccountID:     account.ID,
+			AssetID:       asset.ID,
+			Amount:        amount,
+			PurchasePrice: purchasePrice,
+			// Keep original purchase date for edits
+		}
+		if err := holdingRepo.Update(&holding); err != nil {
+			m.modalState.ShowError = true
+			m.modalState.ErrorMessage = "Failed to update holding"
+			return
+		}
+	} else {
+		// Create new holding
+		holding := models.Holding{
+			AccountID:     account.ID,
+			AssetID:       asset.ID,
+			Amount:        amount,
+			PurchasePrice: purchasePrice,
+			PurchaseDate:  time.Now(),
+		}
+		if err := holdingRepo.Create(&holding); err != nil {
+			m.modalState.ShowError = true
+			m.modalState.ErrorMessage = "Failed to create holding"
+			return
+		}
 	}
 
 	// Success - reload data and close modal
@@ -202,7 +242,11 @@ func (m *Model) saveAsset() {
 func (m *Model) renderAddAssetModal() string {
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render("Add New Asset") + "\n\n")
+	title := "Add New Asset"
+	if m.modalState.IsEdit {
+		title = "Edit Asset"
+	}
+	b.WriteString(titleStyle.Render(title) + "\n\n")
 
 	// Render input fields
 	for i, field := range m.modalState.Fields {

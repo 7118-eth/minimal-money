@@ -97,9 +97,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.inputMode = true
 			m.initAddAssetModal()
 		case "e":
-			// TODO: Edit selected holding
+			m.editSelectedHolding()
 		case "d":
-			// TODO: Delete selected holding
+			m.deleteSelectedHolding()
 		case "r":
 			return m, m.refreshPrices()
 		case "h":
@@ -258,4 +258,43 @@ func (m Model) loadDataCmd() tea.Cmd {
 			holdings: holdings,
 		}
 	}
+}
+
+func (m *Model) deleteSelectedHolding() {
+	// Get selected row index
+	selectedRow := m.table.Cursor()
+	if selectedRow >= len(m.holdings) {
+		return
+	}
+
+	// Get the holding to delete
+	holding := m.holdings[selectedRow]
+
+	// Delete from database
+	holdingRepo := repository.NewHoldingRepository()
+	if err := holdingRepo.Delete(holding.ID); err != nil {
+		m.err = err
+		return
+	}
+
+	// Reload data
+	m.loadData()
+}
+
+func (m *Model) editSelectedHolding() {
+	// Get selected row index
+	selectedRow := m.table.Cursor()
+	if selectedRow >= len(m.holdings) {
+		return
+	}
+
+	// Get the holding to edit
+	holding := m.holdings[selectedRow]
+	account := m.getAccountByID(holding.AccountID)
+	asset := m.getAssetByID(holding.AssetID)
+
+	// Initialize edit modal with existing values
+	m.view = ViewAddAsset
+	m.inputMode = true
+	m.initEditAssetModal(holding, account, asset)
 }
