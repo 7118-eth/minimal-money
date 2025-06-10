@@ -1,4 +1,4 @@
-# Budget Tracker - Quick Reference
+# Minimal Money - Quick Reference
 
 ## Commands
 ```bash
