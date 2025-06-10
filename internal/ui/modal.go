@@ -216,9 +216,6 @@ func (m *Model) renderAddAssetModal() string {
 		style := inputStyle
 		if m.modalState.ActiveField == i {
 			style = activeInputStyle
-			if m.inputMode && m.inputBuffer != "" {
-				value = m.inputBuffer
-			}
 			value += "█"
 		}
 		
