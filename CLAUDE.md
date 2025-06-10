@@ -55,27 +55,30 @@ minimal-money/
 
 ## Keyboard Controls
 - `n` - Add new asset
-- `e` - Edit selected (not connected)
-- `d` - Delete selected (not connected)
+- `e` - Edit selected holding
+- `d` - Delete selected holding
 - `p` - Update prices (manual refresh)
-- `h` - View history
+- `h` - View audit trail
 - `q` - Quit
-- `ESC` - Go back
+- `ESC` - Go back / Cancel
 - `Tab` - Navigate modal fields
 - Arrow keys - Navigate table
+- `Enter` - Confirm in modals
 
 ## Current Features
 - ✅ Multi-account portfolio tracking
-- ✅ Asset-first tree view with account grouping
+- ✅ Asset-first tree view with htop-style visualization
+- ✅ Tree structure across all columns (Asset/Account, Amount, Value)
 - ✅ Database-cached prices with timestamps
 - ✅ Manual price updates (press 'p')
-- ✅ P&L calculation
-- ✅ SQLite persistence
-- ✅ Full terminal width table UI
+- ✅ Sorting by highest value first
+- ✅ SQLite persistence with GORM
+- ✅ Full terminal width responsive UI
 - ✅ Last price update timestamp display
-- ✅ Audit trail for portfolio changes
-- ✅ Input validation
-- ✅ Comprehensive tests
+- ✅ Audit trail for all portfolio changes
+- ✅ Complete CRUD operations (Create, Read, Update, Delete)
+- ✅ Input validation and error handling
+- ✅ Comprehensive test suite with real APIs
 
 ## API Integrations
 - CoinGecko: Crypto prices (cached in DB)
