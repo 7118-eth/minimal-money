@@ -70,7 +70,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			case "backspace":
-				if len(m.inputBuffer) > 0 {
+				if m.view == ViewAddAsset {
+					m.handleModalInput("backspace")
+				} else if len(m.inputBuffer) > 0 {
 					m.inputBuffer = m.inputBuffer[:len(m.inputBuffer)-1]
 				}
 			case "tab":
