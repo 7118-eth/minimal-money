@@ -178,18 +178,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.accounts = msg.accounts
 		m.assets = msg.assets
 		m.holdings = msg.holdings
-		m.updateTableData()
 		
-		// Load cached prices
+		// Load cached prices first, before updating table
 		if m.priceService != nil && len(m.assets) > 0 {
 			cachedPrices, _ := m.priceService.GetCachedPrices()
 			if len(cachedPrices) > 0 {
 				m.prices = cachedPrices
 				lastUpdate, _ := m.priceService.GetLastUpdateTime()
 				m.lastPriceUpdate = lastUpdate
-				m.updateTableData()
 			}
 		}
+		
+		// Now update table with prices available
+		m.updateTableData()
 	}
 
 	return m, cmd

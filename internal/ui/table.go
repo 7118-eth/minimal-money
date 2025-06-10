@@ -93,7 +93,17 @@ func (m *Model) buildTableRows() []table.Row {
 	}
 	sort.Slice(assetIDs, func(i, j int) bool {
 		// Sort by total value descending
-		return assetTotalValues[assetIDs[i]] > assetTotalValues[assetIDs[j]]
+		valueI := assetTotalValues[assetIDs[i]]
+		valueJ := assetTotalValues[assetIDs[j]]
+		
+		// If values are equal (or both zero), sort by symbol
+		if valueI == valueJ {
+			assetI := m.getAssetByID(assetIDs[i])
+			assetJ := m.getAssetByID(assetIDs[j])
+			return assetI.Symbol < assetJ.Symbol
+		}
+		
+		return valueI > valueJ
 	})
 	
 	// Build rows with tree structure
@@ -101,6 +111,13 @@ func (m *Model) buildTableRows() []table.Row {
 		holdings := assetHoldings[assetID]
 		asset := m.getAssetByID(assetID)
 		price := m.prices[assetID]
+		
+		// Sort holdings within each asset by value (highest first)
+		sort.Slice(holdings, func(i, j int) bool {
+			valueI := holdings[i].Amount * price
+			valueJ := holdings[j].Amount * price
+			return valueI > valueJ
+		})
 		
 		for i, holding := range holdings {
 			account := m.getAccountByID(holding.AccountID)
