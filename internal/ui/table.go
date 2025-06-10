@@ -167,8 +167,8 @@ func (m *Model) buildTableRows() []table.Row {
 			
 			row := table.Row{
 				"  " + treeChar + account.Name,
-				"  " + treeChar + amountStr,
-				"  " + treeChar + fmt.Sprintf("$%.2f", value),
+				amountStr,
+				fmt.Sprintf("$%.2f", value),
 			}
 			rows = append(rows, row)
 		}

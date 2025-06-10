@@ -94,14 +94,14 @@ Account ──1:N──▶ Holding ◀──N:1── Asset
 
 ### Main Table View
 ```
-💰 Minimal Money                               Total: $28,567.43
-                                               Last Update: 2025-01-11 09:15:22
+💰 Minimal Money                               Total: $51,284.43
+                                               Last Update: 2025-01-11 14:22:18
 
 Asset/Account                    Amount                Value
 BTC                              0.7250                $29,450.00
   ├─ Hardware Wallet             0.4500                $18,270.00
   ├─ CoinBase                    0.1800                $7,308.00
-  └─ Gemini                      0.0950                $3,856.00
+  └─ Gemini                      0.0950                $3,872.00
 ETH                              4.2000                $10,080.00
   ├─ Hardware Wallet             2.8000                $6,720.00
   └─ Binance                     1.4000                $3,360.00
@@ -109,8 +109,9 @@ USD                              8,750.00              $8,750.00
   ├─ CityTrust                   5,200.00              $5,200.00
   ├─ FirstBank                   2,100.00              $2,100.00
   └─ GlobalBank                  1,450.00              $1,450.00
-EUR                              2,300.00              $2,484.00
-  └─ FirstBank                   2,300.00              $2,484.00
+GBP                              2,100.00              $2,604.00
+  ├─ MonzoBank                   1,400.00              $1,736.00
+  └─ BarclaysBank                700.00                $868.00
 
 [n]ew  [e]dit  [d]elete  [p]rice update  [h]istory  [q]uit
 ```
