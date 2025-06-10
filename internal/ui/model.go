@@ -17,6 +17,7 @@ const (
 
 type Model struct {
 	view         View
+	accounts     []models.Account
 	assets       []models.Asset
 	holdings     []models.Holding
 	prices       map[uint]float64
@@ -30,10 +31,15 @@ type Model struct {
 }
 
 func InitialModel() Model {
-	return Model{
-		view:   ViewMain,
-		prices: make(map[uint]float64),
+	m := Model{
+		view:     ViewMain,
+		prices:   make(map[uint]float64),
+		accounts: []models.Account{},
+		assets:   []models.Asset{},
+		holdings: []models.Holding{},
 	}
+	m.setupTable()
+	return m
 }
 
 func (m Model) Init() tea.Cmd {
@@ -41,62 +47,66 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			if !m.inputMode {
-				return m, tea.Quit
-			}
-		case "esc":
-			if m.inputMode {
-				m.inputMode = false
-				m.inputBuffer = ""
-			}
-			m.view = ViewMain
-			return m, nil
-		case "enter":
-			if m.inputMode && m.view == ViewAddAsset {
-				// TODO: Process the input
+		if m.inputMode {
+			switch msg.String() {
+			case "esc":
 				m.inputMode = false
 				m.inputBuffer = ""
 				m.view = ViewMain
-			}
-			return m, nil
-		case "backspace":
-			if m.inputMode && len(m.inputBuffer) > 0 {
-				m.inputBuffer = m.inputBuffer[:len(m.inputBuffer)-1]
-			}
-			return m, nil
-		default:
-			if m.inputMode {
+			case "enter":
+				if m.view == ViewAddAsset {
+					// TODO: Process the input
+					m.inputMode = false
+					m.inputBuffer = ""
+					m.view = ViewMain
+				}
+			case "backspace":
+				if len(m.inputBuffer) > 0 {
+					m.inputBuffer = m.inputBuffer[:len(m.inputBuffer)-1]
+				}
+			default:
 				m.inputBuffer += msg.String()
-				return m, nil
 			}
-			
-			switch msg.String() {
-			case "1":
-				if m.view == ViewMain {
-					m.view = ViewAssets
-				}
-			case "2":
-				if m.view == ViewMain {
-					m.view = ViewAddAsset
-					m.inputMode = true
-				}
-			case "3":
-				if m.view == ViewMain {
-					m.view = ViewHistory
-				}
+			return m, nil
+		}
+		
+		// Main table view keyboard handling
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "n":
+			m.view = ViewAddAsset
+			m.inputMode = true
+		case "e":
+			// TODO: Edit selected holding
+		case "d":
+			// TODO: Delete selected holding
+		case "r":
+			// TODO: Refresh prices
+		case "h":
+			m.view = ViewHistory
+		case "esc":
+			m.view = ViewMain
+		default:
+			// Pass through to table for navigation
+			if m.view == ViewMain {
+				m.table, cmd = m.table.Update(msg)
 			}
 		}
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		if m.view == ViewMain {
+			m.table.SetHeight(msg.Height - 8)
+		}
 	}
 
-	return m, nil
+	return m, cmd
 }
 
 func (m Model) View() string {
@@ -115,15 +125,7 @@ func (m Model) View() string {
 }
 
 func (m Model) mainView() string {
-	return `
-💰 Budget Tracker
-
-1. View Assets
-2. Add Asset
-3. View History
-q. Quit
-
-Choose an option: `
+	return m.tableView()
 }
 
 func (m Model) assetsView() string {
