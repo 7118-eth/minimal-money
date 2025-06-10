@@ -12,8 +12,8 @@ import (
 )
 
 func TestAssetRepository_Create(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewAssetRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewAssetRepositoryWithDB(db)
 		
 		asset := &models.Asset{
 			Symbol: "BTC",
@@ -32,12 +32,11 @@ func TestAssetRepository_Create(t *testing.T) {
 		assert.Equal(t, "BTC", saved.Symbol)
 		assert.Equal(t, "Bitcoin", saved.Name)
 		assert.Equal(t, models.AssetTypeCrypto, saved.Type)
-	})
 }
 
 func TestAssetRepository_GetAll(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewAssetRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewAssetRepositoryWithDB(db)
 		
 		// Create test assets
 		btc := fixtures.NewAsset().WithSymbol("BTC").WithName("Bitcoin").Create(t, db)
@@ -62,12 +61,11 @@ func TestAssetRepository_GetAll(t *testing.T) {
 		assert.Equal(t, btc.Name, assetMap["BTC"].Name)
 		assert.Equal(t, eth.Name, assetMap["ETH"].Name)
 		assert.Equal(t, usd.Type, assetMap["USD"].Type)
-	})
 }
 
 func TestAssetRepository_GetBySymbol(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewAssetRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewAssetRepositoryWithDB(db)
 		
 		// Create test asset
 		fixtures.NewAsset().WithSymbol("ETH").WithName("Ethereum").Create(t, db)
@@ -82,12 +80,11 @@ func TestAssetRepository_GetBySymbol(t *testing.T) {
 		_, err = repo.GetBySymbol("FAKE")
 		assert.Error(t, err)
 		assert.Equal(t, gorm.ErrRecordNotFound, err)
-	})
 }
 
 func TestAssetRepository_Update(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewAssetRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewAssetRepositoryWithDB(db)
 		
 		// Create test asset
 		asset := fixtures.NewAsset().WithSymbol("SOL").WithName("Solana").Create(t, db)
@@ -103,12 +100,11 @@ func TestAssetRepository_Update(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Solana Network", updated.Name)
 		assert.Equal(t, "SOL", updated.Symbol) // Symbol unchanged
-	})
 }
 
 func TestAssetRepository_Delete(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewAssetRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewAssetRepositoryWithDB(db)
 		
 		// Create test asset
 		asset := fixtures.NewAsset().Create(t, db)
@@ -126,12 +122,11 @@ func TestAssetRepository_Delete(t *testing.T) {
 		err = db.Unscoped().First(&deleted, asset.ID).Error
 		require.NoError(t, err)
 		assert.NotNil(t, deleted.DeletedAt)
-	})
 }
 
 func TestAssetRepository_UniqueSymbol(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewAssetRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewAssetRepositoryWithDB(db)
 		
 		// Create first asset
 		asset1 := &models.Asset{
@@ -150,5 +145,4 @@ func TestAssetRepository_UniqueSymbol(t *testing.T) {
 		}
 		err = repo.Create(asset2)
 		assert.Error(t, err) // Should fail due to unique constraint
-	})
 }

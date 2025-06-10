@@ -1,347 +1,252 @@
-# Budget Tracker - Test Architecture
+# Budget Tracker - Pragmatic Test Architecture
 
 ## Overview
 
-This document outlines the comprehensive testing strategy for the Budget Tracker application, covering unit tests, integration tests, and test infrastructure.
+This document outlines a practical testing approach for the Budget Tracker, focusing on real integration tests that ensure the tool actually works with real databases and APIs.
 
 ## Test Philosophy
 
-1. **Fast Feedback**: Unit tests should run in milliseconds
-2. **Isolation**: Tests should not depend on external services or state
-3. **Clarity**: Test names should describe what and why
-4. **Maintainability**: DRY principles apply to tests too
-5. **Coverage**: Aim for 80%+ coverage on business logic
+1. **Real Integration**: Test against actual SQLite databases and real APIs
+2. **Simplicity**: Avoid complex mocking when real services work fine
+3. **Practicality**: Tests should verify the tool works in real scenarios
+4. **Speed**: Keep tests fast enough to run frequently (< 30 seconds total)
 
 ## Test Structure
 
 ```
 budget/
 ├── internal/
-│   ├── models/
-│   │   └── asset_test.go
 │   ├── repository/
-│   │   ├── account_test.go
-│   │   ├── asset_test.go
-│   │   └── holding_test.go
-│   ├── service/
-│   │   └── price_test.go
+│   │   └── *_test.go      # Test with real SQLite
 │   ├── api/
-│   │   └── client_test.go
+│   │   └── client_test.go  # Test with real APIs
+│   ├── service/
+│   │   └── price_test.go   # Integration tests
 │   └── ui/
-│       ├── model_test.go
-│       ├── table_test.go
-│       └── modal_test.go
+│       └── model_test.go   # State transition tests
 ├── test/
 │   ├── integration/
-│   │   ├── workflow_test.go
-│   │   └── api_test.go
-│   ├── fixtures/
-│   │   └── test_data.go
-│   └── helpers/
-│       ├── db.go
-│       ├── api.go
-│       └── ui.go
+│   │   └── workflow_test.go # End-to-end tests
+│   └── testdata/
+│       └── test_budget.db   # Test database (gitignored)
 └── Makefile
 ```
 
-## Testing Layers
+## Database Testing Strategy
 
-### 1. Unit Tests
-
-#### Repository Layer
+### Use Real SQLite Files
 ```go
-// Test with in-memory SQLite
-func TestAccountRepository_Create(t *testing.T) {
-    db := test.SetupTestDB(t)
-    repo := repository.NewAccountRepository(db)
-    
-    account := &models.Account{
-        Name: "Test Account",
-        Type: "wallet",
-    }
-    
-    err := repo.Create(account)
-    assert.NoError(t, err)
-    assert.NotZero(t, account.ID)
-}
-```
-
-#### Service Layer
-```go
-// Test with mocked dependencies
-func TestPriceService_FetchPrices(t *testing.T) {
-    mockClient := mocks.NewMockPriceClient(t)
-    service := service.NewPriceService(mockClient)
-    
-    mockClient.On("GetCryptoPrices", []string{"BTC"}).
-        Return(map[string]float64{"BTC": 45000}, nil)
-    
-    prices, err := service.FetchPrices([]models.Asset{
-        {ID: 1, Symbol: "BTC", Type: models.AssetTypeCrypto},
-    })
-    
-    assert.NoError(t, err)
-    assert.Equal(t, 45000.0, prices[1])
-}
-```
-
-#### API Layer
-```go
-// Test with httptest
-func TestPriceClient_GetCryptoPrices(t *testing.T) {
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        json.NewEncoder(w).Encode(map[string]map[string]float64{
-            "bitcoin": {"usd": 45000},
-        })
-    }))
-    defer server.Close()
-    
-    client := api.NewPriceClientWithURL(server.URL)
-    prices, err := client.GetCryptoPrices([]string{"BTC"})
-    
-    assert.NoError(t, err)
-    assert.Equal(t, 45000.0, prices["BTC"])
-}
-```
-
-#### UI Layer
-```go
-// Test state transitions
-func TestModel_AddAsset(t *testing.T) {
-    model := ui.InitialModel()
-    model = model.HandleKey("n") // Open add asset modal
-    
-    assert.Equal(t, ui.ViewAddAsset, model.View)
-    assert.True(t, model.InputMode)
-}
-```
-
-### 2. Integration Tests
-
-```go
-func TestAddAssetWorkflow(t *testing.T) {
-    // Setup
-    db := test.SetupTestDB(t)
-    mockAPI := test.SetupMockAPI(t)
-    defer mockAPI.Close()
-    
-    app := NewTestApp(db, mockAPI.URL)
-    
-    // Execute workflow
-    app.PressKey("n")
-    app.TypeText("hardware wallet")
-    app.PressTab()
-    app.TypeText("BTC")
-    app.PressTab()
-    app.TypeText("0.5")
-    app.PressEnter()
-    
-    // Verify
-    holdings := app.GetHoldings()
-    assert.Len(t, holdings, 1)
-    assert.Equal(t, "BTC", holdings[0].Asset.Symbol)
-    assert.Equal(t, 0.5, holdings[0].Amount)
-}
-```
-
-### 3. Table-Driven Tests
-
-```go
-func TestAssetType_Guess(t *testing.T) {
-    tests := []struct {
-        name     string
-        symbol   string
-        expected models.AssetType
-    }{
-        {"Bitcoin", "BTC", models.AssetTypeCrypto},
-        {"US Dollar", "USD", models.AssetTypeFiat},
-        {"Euro", "EUR", models.AssetTypeFiat},
-        {"Unknown", "XYZ", models.AssetTypeCrypto},
-    }
-    
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := guessAssetType(tt.symbol)
-            assert.Equal(t, tt.expected, result)
-        })
-    }
-}
-```
-
-## Test Helpers
-
-### Database Helper
-```go
-package test
-
 func SetupTestDB(t *testing.T) *gorm.DB {
-    db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+    // Create a unique test database for each test
+    dbPath := fmt.Sprintf("./test/testdata/test_%s.db", t.Name())
+    
+    // Ensure directory exists
+    os.MkdirAll("./test/testdata", 0755)
+    
+    db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
         Logger: logger.Default.LogMode(logger.Silent),
     })
     require.NoError(t, err)
     
-    err = db.AutoMigrate(
-        &models.Account{},
-        &models.Asset{},
-        &models.Holding{},
-    )
+    // Run migrations
+    err = db.AutoMigrate(&models.Account{}, &models.Asset{}, &models.Holding{})
     require.NoError(t, err)
     
+    // Cleanup after test
     t.Cleanup(func() {
         sqlDB, _ := db.DB()
         sqlDB.Close()
+        os.Remove(dbPath)
     })
     
     return db
 }
 ```
 
-### API Mock Helper
-```go
-func SetupMockAPI(t *testing.T) *httptest.Server {
-    mux := http.NewServeMux()
-    
-    mux.HandleFunc("/api/v3/simple/price", func(w http.ResponseWriter, r *http.Request) {
-        response := map[string]map[string]float64{
-            "bitcoin": {"usd": 45000},
-            "ethereum": {"usd": 3000},
-        }
-        json.NewEncoder(w).Encode(response)
-    })
-    
-    return httptest.NewServer(mux)
-}
-```
+### Benefits
+- Tests real file I/O behavior
+- Catches actual SQLite issues
+- Can inspect database if test fails
+- More realistic than in-memory
 
-### Test Fixtures
+## API Testing Strategy
+
+### Test Against Real APIs
 ```go
-func CreateTestAccount(t *testing.T, db *gorm.DB, name string) *models.Account {
-    account := &models.Account{
-        Name: name,
-        Type: "wallet",
+func TestRealCoinGeckoAPI(t *testing.T) {
+    if testing.Short() {
+        t.Skip("Skipping API test in short mode")
     }
-    require.NoError(t, db.Create(account).Error)
-    return account
-}
-
-func CreateTestHolding(t *testing.T, db *gorm.DB, opts ...HoldingOption) *models.Holding {
-    // Builder pattern for test data
+    
+    client := api.NewPriceClient()
+    
+    // Test with common cryptos
+    prices, err := client.GetCryptoPrices([]string{"BTC", "ETH"})
+    require.NoError(t, err)
+    
+    // Verify we got reasonable prices
+    assert.Greater(t, prices["BTC"], 10000.0)
+    assert.Greater(t, prices["ETH"], 500.0)
 }
 ```
 
-## Mocking Strategy
-
-### Interface-Based Mocking
+### Rate Limit Handling
 ```go
-type PriceClient interface {
-    GetCryptoPrices(symbols []string) (map[string]float64, error)
-    GetFiatRates(symbols []string) (map[string]float64, error)
+func TestAPIRateLimits(t *testing.T) {
+    // Add delays between tests to respect rate limits
+    time.Sleep(100 * time.Millisecond)
 }
-
-//go:generate mockery --name=PriceClient --output=mocks
 ```
 
-### Time Mocking
+### Benefits
+- Catches real API changes
+- Verifies API keys/endpoints work
+- Tests actual network conditions
+- No mock maintenance needed
+
+## Integration Test Example
+
 ```go
-type Clock interface {
-    Now() time.Time
-}
-
-type MockClock struct {
-    CurrentTime time.Time
-}
-
-func (m *MockClock) Now() time.Time {
-    return m.CurrentTime
+func TestCompleteWorkflow(t *testing.T) {
+    // Setup real database
+    db := SetupTestDB(t)
+    
+    // Create repositories with real DB
+    accountRepo := repository.NewAccountRepositoryWithDB(db)
+    assetRepo := repository.NewAssetRepositoryWithDB(db)
+    holdingRepo := repository.NewHoldingRepositoryWithDB(db)
+    
+    // Create account
+    account := &models.Account{Name: "Test Wallet", Type: "wallet"}
+    err := accountRepo.Create(account)
+    require.NoError(t, err)
+    
+    // Create asset (will fetch real price)
+    asset := &models.Asset{Symbol: "BTC", Name: "Bitcoin", Type: models.AssetTypeCrypto}
+    err = assetRepo.Create(asset)
+    require.NoError(t, err)
+    
+    // Create holding
+    holding := &models.Holding{
+        AccountID: account.ID,
+        AssetID:   asset.ID,
+        Amount:    0.5,
+    }
+    err = holdingRepo.Create(holding)
+    require.NoError(t, err)
+    
+    // Fetch real price
+    priceService := service.NewPriceService()
+    prices, err := priceService.FetchPrices([]models.Asset{*asset})
+    require.NoError(t, err)
+    assert.Greater(t, prices[asset.ID], 0.0)
 }
 ```
 
-## Test Commands
+## Test Data Management
+
+### Test Database
+- Each test gets its own database file
+- Automatically cleaned up after test
+- Can be preserved for debugging with flag
+
+### Sample Data
+```go
+func LoadSamplePortfolio(t *testing.T, db *gorm.DB) {
+    // Create realistic test data
+    accounts := []models.Account{
+        {Name: "hardware wallet", Type: "wallet"},
+        {Name: "NeoBank", Type: "bank"},
+    }
+    
+    for _, acc := range accounts {
+        require.NoError(t, db.Create(&acc).Error)
+    }
+}
+```
+
+## Running Tests
 
 ```makefile
-# Makefile
-.PHONY: test test-unit test-integration test-coverage test-race
+# Run all tests (including API tests)
+test-all:
+	go test ./...
 
-test: test-unit test-integration
-
-test-unit:
+# Run fast tests only (skip API calls)
+test-fast:
 	go test -short ./...
 
+# Run with real API calls
 test-integration:
-	go test -run Integration ./test/integration
+	go test -run Integration ./...
 
-test-coverage:
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
+# Keep test databases for debugging
+test-debug:
+	TEST_KEEP_DB=1 go test -v ./...
 
-test-race:
-	go test -race ./...
-
-test-bench:
-	go test -bench=. -benchmem ./...
+# Clean test data
+test-clean:
+	rm -rf ./test/testdata/*.db
 ```
 
-## Continuous Integration
+## Environment Variables
 
-```yaml
-# .github/workflows/test.yml
-name: Tests
-on: [push, pull_request]
+```bash
+# Skip API tests
+export TEST_SKIP_API=1
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '1.24'
-      
-      - name: Run tests
-        run: make test-coverage
-      
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+# Keep test databases
+export TEST_KEEP_DB=1
+
+# Use specific test database
+export TEST_DB_PATH="./my_test.db"
 ```
 
-## Testing Best Practices
+## Best Practices
 
-1. **Test Naming**: `Test<Type>_<Method>_<Scenario>`
-2. **Arrange-Act-Assert**: Clear test structure
-3. **One Assertion Per Test**: When possible
-4. **Parallel Tests**: Use `t.Parallel()` for independent tests
-5. **Cleanup**: Always cleanup resources with `t.Cleanup()`
-6. **Error Messages**: Provide context in assertions
-7. **Test Data**: Use builders and fixtures for complex data
+1. **API Tests**
+   - Run sparingly to avoid rate limits
+   - Add reasonable assertions (price > 0)
+   - Skip in CI if needed
 
-## Performance Testing
+2. **Database Tests**
+   - Each test gets fresh database
+   - Test actual constraints
+   - Verify migrations work
 
-```go
-func BenchmarkPriceService_FetchPrices(b *testing.B) {
-    service := setupTestService(b)
-    assets := generateTestAssets(100)
-    
-    b.ResetTimer()
-    for i := 0; i < b.N; i++ {
-        _, _ = service.FetchPrices(assets)
-    }
-}
+3. **Speed**
+   - Parallelize where possible
+   - Cache API responses within test run
+   - Use -short flag for quick feedback
+
+4. **Debugging**
+   - Keep failed test databases
+   - Log actual vs expected values
+   - Use verbose mode when needed
+
+## Example Test Output
+
+```bash
+$ make test-all
+=== RUN   TestAccountRepository_Create
+    Using test database: ./test/testdata/test_TestAccountRepository_Create.db
+--- PASS: TestAccountRepository_Create (0.05s)
+
+=== RUN   TestRealCoinGeckoAPI
+    Fetching real prices from CoinGecko...
+    BTC: $45,234.00
+    ETH: $3,012.00
+--- PASS: TestRealCoinGeckoAPI (0.84s)
+
+=== RUN   TestCompleteWorkflow
+    Created account: hardware wallet
+    Created asset: BTC
+    Fetched price: $45,234.00
+    Portfolio value: $22,617.00
+--- PASS: TestCompleteWorkflow (1.23s)
+
+PASS
+ok      github.com/bioharz/budget       2.12s
 ```
 
-## UI Testing Strategy
-
-Since Bubble Tea is interactive, we'll use:
-
-1. **State Testing**: Test model state transitions
-2. **View Snapshots**: Golden file testing for rendered views
-3. **Command Testing**: Verify commands are triggered correctly
-4. **Message Handling**: Test update logic for all message types
-
-```go
-func TestTableView_Render(t *testing.T) {
-    model := setupTestModel(t)
-    view := model.View()
-    
-    golden.Assert(t, view, "table_view.golden")
-}
-```
+This approach gives us confidence that our personal budget tool actually works with real services!

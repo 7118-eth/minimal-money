@@ -1,4 +1,4 @@
-.PHONY: all build run test test-unit test-integration test-coverage test-race clean
+.PHONY: all build run test test-all test-fast test-coverage test-race test-clean clean
 
 # Default target
 all: build
@@ -11,16 +11,16 @@ build:
 run:
 	go run cmd/budget/main.go
 
-# Run all tests
-test: test-unit test-integration
+# Run all tests (including API tests)
+test: test-all
 
-# Run unit tests only (short mode skips integration tests)
-test-unit:
+# Run all tests including real API calls
+test-all:
+	go test ./...
+
+# Run fast tests only (skip API calls)
+test-fast:
 	go test -short ./...
-
-# Run integration tests only
-test-integration:
-	go test -run Integration ./test/integration
 
 # Run tests with coverage report
 test-coverage:
@@ -36,18 +36,24 @@ test-race:
 test-bench:
 	go test -bench=. -benchmem ./...
 
-# Clean build artifacts
-clean:
+# Keep test databases for debugging
+test-debug:
+	TEST_KEEP_DB=1 go test -v ./...
+
+# Clean test databases
+test-clean:
+	rm -rf ./test/testdata/*.db
+	rm -rf ./test/testdata/*.db-shm
+	rm -rf ./test/testdata/*.db-wal
+
+# Clean all artifacts
+clean: test-clean
 	rm -f budget
 	rm -f coverage.out coverage.html
 
 # Format code
 fmt:
 	go fmt ./...
-
-# Run linter
-lint:
-	golangci-lint run
 
 # Install dependencies
 deps:

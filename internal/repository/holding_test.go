@@ -13,8 +13,8 @@ import (
 )
 
 func TestHoldingRepository_Create(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewHoldingRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewHoldingRepositoryWithDB(db)
 		
 		// Create account and asset first
 		account := fixtures.NewAccount().WithName("Test Wallet").Create(t, db)
@@ -40,12 +40,11 @@ func TestHoldingRepository_Create(t *testing.T) {
 		assert.Equal(t, asset.ID, saved.AssetID)
 		assert.Equal(t, 0.5, saved.Amount)
 		assert.Equal(t, float64(40000), saved.PurchasePrice)
-	})
 }
 
 func TestHoldingRepository_GetAll(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewHoldingRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewHoldingRepositoryWithDB(db)
 		
 		// Create test data
 		account1 := fixtures.NewAccount().WithName("hardware wallet").Create(t, db)
@@ -82,12 +81,11 @@ func TestHoldingRepository_GetAll(t *testing.T) {
 			assert.NotEmpty(t, holding.Account.Name)
 			assert.NotEmpty(t, holding.Asset.Symbol)
 		}
-	})
 }
 
 func TestHoldingRepository_GetByID(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewHoldingRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewHoldingRepositoryWithDB(db)
 		
 		// Create test data
 		account := fixtures.NewAccount().WithName("Test Account").Create(t, db)
@@ -110,12 +108,11 @@ func TestHoldingRepository_GetByID(t *testing.T) {
 		_, err = repo.GetByID(99999)
 		assert.Error(t, err)
 		assert.Equal(t, gorm.ErrRecordNotFound, err)
-	})
 }
 
 func TestHoldingRepository_GetByAccountID(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewHoldingRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewHoldingRepositoryWithDB(db)
 		
 		// Create test data
 		account1 := fixtures.NewAccount().WithName("Account 1").Create(t, db)
@@ -159,12 +156,11 @@ func TestHoldingRepository_GetByAccountID(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, holdings, 1)
 		assert.Equal(t, account2.ID, holdings[0].AccountID)
-	})
 }
 
 func TestHoldingRepository_Update(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewHoldingRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewHoldingRepositoryWithDB(db)
 		
 		// Create test data
 		account := fixtures.NewAccount().Create(t, db)
@@ -188,12 +184,11 @@ func TestHoldingRepository_Update(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 1.5, updated.Amount)
 		assert.Equal(t, float64(35000), updated.PurchasePrice)
-	})
 }
 
 func TestHoldingRepository_Delete(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewHoldingRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewHoldingRepositoryWithDB(db)
 		
 		// Create test data
 		account := fixtures.NewAccount().Create(t, db)
@@ -216,12 +211,11 @@ func TestHoldingRepository_Delete(t *testing.T) {
 		err = db.Unscoped().First(&deleted, holding.ID).Error
 		require.NoError(t, err)
 		assert.NotNil(t, deleted.DeletedAt)
-	})
 }
 
 func TestHoldingRepository_MultipleHoldingsSameAsset(t *testing.T) {
-	helpers.WithTestDB(t, func(db *gorm.DB) {
-		repo := NewHoldingRepositoryWithDB(db)
+	db := helpers.SetupTestDB(t)
+	repo := NewHoldingRepositoryWithDB(db)
 		
 		// Create test data
 		account1 := fixtures.NewAccount().WithName("Account 1").Create(t, db)
@@ -249,5 +243,4 @@ func TestHoldingRepository_MultipleHoldingsSameAsset(t *testing.T) {
 		holdings, err := repo.GetAll()
 		require.NoError(t, err)
 		assert.Len(t, holdings, 2)
-	})
 }
