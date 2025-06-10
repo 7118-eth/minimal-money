@@ -3,40 +3,47 @@ package repository
 import (
 	"github.com/bioharz/budget/internal/db"
 	"github.com/bioharz/budget/internal/models"
+	"gorm.io/gorm"
 )
 
-type AssetRepository struct{}
+type AssetRepository struct{
+	db *gorm.DB
+}
 
 func NewAssetRepository() *AssetRepository {
-	return &AssetRepository{}
+	return &AssetRepository{db: db.DB}
+}
+
+func NewAssetRepositoryWithDB(database *gorm.DB) *AssetRepository {
+	return &AssetRepository{db: database}
 }
 
 func (r *AssetRepository) Create(asset *models.Asset) error {
-	return db.DB.Create(asset).Error
+	return r.db.Create(asset).Error
 }
 
 func (r *AssetRepository) GetAll() ([]models.Asset, error) {
 	var assets []models.Asset
-	err := db.DB.Find(&assets).Error
+	err := r.db.Find(&assets).Error
 	return assets, err
 }
 
 func (r *AssetRepository) GetByID(id uint) (models.Asset, error) {
 	var asset models.Asset
-	err := db.DB.First(&asset, id).Error
+	err := r.db.First(&asset, id).Error
 	return asset, err
 }
 
 func (r *AssetRepository) GetBySymbol(symbol string) (models.Asset, error) {
 	var asset models.Asset
-	err := db.DB.Where("symbol = ?", symbol).First(&asset).Error
+	err := r.db.Where("symbol = ?", symbol).First(&asset).Error
 	return asset, err
 }
 
 func (r *AssetRepository) Update(asset *models.Asset) error {
-	return db.DB.Save(asset).Error
+	return r.db.Save(asset).Error
 }
 
 func (r *AssetRepository) Delete(id uint) error {
-	return db.DB.Delete(&models.Asset{}, id).Error
+	return r.db.Delete(&models.Asset{}, id).Error
 }
