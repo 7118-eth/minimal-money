@@ -103,10 +103,20 @@ func (c *PriceClient) GetCryptoPrices(symbols []string) (map[string]float64, err
 func (c *PriceClient) GetFiatRates(symbols []string) (map[string]float64, error) {
 	rates := make(map[string]float64)
 	
-	// USD is always 1.0
+	// Handle fixed rate currencies
 	for _, symbol := range symbols {
-		if strings.ToUpper(symbol) == "USD" {
+		upperSymbol := strings.ToUpper(symbol)
+		switch upperSymbol {
+		case "USD":
 			rates[symbol] = 1.0
+			continue
+		case "AED":
+			// AED is pegged to USD at 3.6725 AED = 1 USD
+			rates[symbol] = 1.0 / 3.6725
+			c.cache[upperSymbol] = cachedPrice{
+				price:     1.0 / 3.6725,
+				timestamp: time.Now(),
+			}
 			continue
 		}
 	}
@@ -115,7 +125,7 @@ func (c *PriceClient) GetFiatRates(symbols []string) (map[string]float64, error)
 	var needsFetch bool
 	for _, symbol := range symbols {
 		symbol = strings.ToUpper(symbol)
-		if symbol != "USD" {
+		if symbol != "USD" && symbol != "AED" {
 			if cached, ok := c.cache[symbol]; ok {
 				if time.Since(cached.timestamp) < 1*time.Hour {
 					rates[symbol] = cached.price

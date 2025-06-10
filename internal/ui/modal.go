@@ -295,7 +295,7 @@ func (m *Model) guessAssetType(symbol string) models.AssetType {
 	symbol = strings.ToUpper(symbol)
 	
 	// Common fiat currencies
-	fiatSymbols := []string{"USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD"}
+	fiatSymbols := []string{"USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "AED"}
 	for _, fiat := range fiatSymbols {
 		if symbol == fiat {
 			return models.AssetTypeFiat
