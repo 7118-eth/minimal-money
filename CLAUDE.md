@@ -57,7 +57,7 @@ minimal-money/
 - `n` - Add new asset
 - `e` - Edit selected (not connected)
 - `d` - Delete selected (not connected)
-- `r` - Refresh prices
+- `p` - Update prices (manual refresh)
 - `h` - View history
 - `q` - Quit
 - `ESC` - Go back
@@ -66,13 +66,18 @@ minimal-money/
 
 ## Current Features
 - ✅ Multi-account portfolio tracking
-- ✅ Real-time prices (crypto & fiat)
+- ✅ Asset-first tree view with account grouping
+- ✅ Database-cached prices with timestamps
+- ✅ Manual price updates (press 'p')
 - ✅ P&L calculation
 - ✅ SQLite persistence
-- ✅ Table-based UI
+- ✅ Full terminal width table UI
+- ✅ Last price update timestamp display
+- ✅ Audit trail for portfolio changes
 - ✅ Input validation
 - ✅ Comprehensive tests
 
 ## API Integrations
-- CoinGecko: Crypto prices (5 min cache)
-- ExchangeRate-API: Fiat rates (1 hour cache)
+- CoinGecko: Crypto prices (cached in DB)
+- ExchangeRate-API: Fiat rates (cached in DB)
+- Manual updates only (press 'p')

@@ -1,6 +1,6 @@
 # Budget Tracker - Development Progress
 
-## Current State (2025-01-10)
+## Current State (2025-01-11)
 
 ### ✅ Implemented
 - Project structure with Go modules
@@ -11,9 +11,13 @@
 - Real-time price fetching from CoinGecko and ExchangeRate APIs
 - Portfolio value calculation with P&L tracking
 - Data persistence - all operations save to database
-- Price caching (5 minutes for crypto, 1 hour for fiat)
-- Keyboard navigation (n/e/d/r/h/q/ESC/arrows)
+- Price caching in database with timestamps
+- Keyboard navigation (n/e/d/p/h/q/ESC/arrows)
 - Comprehensive test suite with real services
+- Asset-first table view with tree-like account grouping
+- Full terminal width utilization
+- Last price update timestamp display
+- Audit trail for all portfolio changes
 
 ### ⚠️ Partially Implemented
 - Edit/Delete operations (UI exists, backend not connected)
@@ -40,7 +44,15 @@
 - UI Model: 52.3%
 - Overall: 33.1% (focused on business logic)
 
-## Recent Changes (2025-01-10)
+## Recent Changes (2025-01-11)
+1. **Refactored Table View** - Asset-first display with tree-like account grouping
+2. **Added Price Caching** - Database storage with timestamps
+3. **Changed Price Update** - Manual update with 'p' key (was 'r')
+4. **Full Width UI** - Utilizes entire terminal width
+5. **Last Update Display** - Shows when prices were last updated
+6. **Audit Trail** - Replaced price history with portfolio change tracking
+
+## Previous Changes (2025-01-10)
 1. **Added Account Model** - Organize holdings by platform
 2. **Implemented Table View** - Replaced menu with always-visible table
 3. **Created Input Modal** - Full form with validation
