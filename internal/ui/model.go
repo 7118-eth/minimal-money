@@ -28,6 +28,7 @@ type Model struct {
 	err          error
 	inputBuffer  string
 	inputMode    bool
+	modalState   ModalState
 }
 
 func InitialModel() Model {
@@ -59,17 +60,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.view = ViewMain
 			case "enter":
 				if m.view == ViewAddAsset {
-					// TODO: Process the input
-					m.inputMode = false
-					m.inputBuffer = ""
-					m.view = ViewMain
+					m.handleModalInput("enter")
+					return m, nil
 				}
 			case "backspace":
 				if len(m.inputBuffer) > 0 {
 					m.inputBuffer = m.inputBuffer[:len(m.inputBuffer)-1]
 				}
+			case "tab":
+				if m.view == ViewAddAsset {
+					m.handleModalInput("tab")
+				}
 			default:
-				m.inputBuffer += msg.String()
+				if m.view == ViewAddAsset {
+					m.handleModalInput(msg.String())
+				} else {
+					m.inputBuffer += msg.String()
+				}
 			}
 			return m, nil
 		}
@@ -81,6 +88,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "n":
 			m.view = ViewAddAsset
 			m.inputMode = true
+			m.initAddAssetModal()
 		case "e":
 			// TODO: Edit selected holding
 		case "d":
@@ -136,14 +144,7 @@ func (m Model) assetsView() string {
 }
 
 func (m Model) addAssetView() string {
-	content := "➕ Add New Asset\n\n"
-	content += "Enter asset symbol (e.g., BTC, ETH, USD, EUR): " + m.inputBuffer
-	if m.inputMode {
-		content += "█"
-	}
-	content += "\n\n"
-	content += "Press ENTER to add, ESC to cancel"
-	return content
+	return m.renderAddAssetModal()
 }
 
 func (m Model) historyView() string {
