@@ -8,6 +8,7 @@ import (
 	"github.com/bioharz/budget/internal/service"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"gorm.io/gorm"
 )
 
 type View string
@@ -46,6 +47,19 @@ func InitialModel() Model {
 		assets:       []models.Asset{},
 		holdings:     []models.Holding{},
 		priceService: service.NewPriceService(),
+	}
+	m.setupTable()
+	return m
+}
+
+func InitialModelWithDB(db *gorm.DB) Model {
+	m := Model{
+		view:         ViewMain,
+		prices:       make(map[uint]float64),
+		accounts:     []models.Account{},
+		assets:       []models.Asset{},
+		holdings:     []models.Holding{},
+		priceService: service.NewPriceServiceWithDB(db),
 	}
 	m.setupTable()
 	return m
@@ -192,8 +206,41 @@ func (m Model) addAssetView() string {
 }
 
 func (m Model) historyView() string {
-	content := "📈 Price History\n\n"
-	content += "No history data available yet.\n\n"
+	content := "📈 Price History (Last 20 entries per asset)\n\n"
+	
+	// Get all price histories
+	histories, err := m.priceService.GetAllPriceHistories(20)
+	if err != nil {
+		content += fmt.Sprintf("Error fetching history: %v\n\n", err)
+		content += "Press ESC to go back"
+		return content
+	}
+	
+	if len(histories) == 0 {
+		content += "No history data available yet.\n"
+		content += "Price history will be recorded when you refresh prices.\n\n"
+		content += "Press ESC to go back"
+		return content
+	}
+	
+	// Display history for each asset
+	for assetID, assetHistories := range histories {
+		asset := m.getAssetByID(assetID)
+		content += fmt.Sprintf("▶ %s (%s)\n", asset.Name, asset.Symbol)
+		content += "─────────────────────────────────────────\n"
+		
+		for i, history := range assetHistories {
+			if i >= 10 { // Limit to 10 entries per asset for display
+				content += fmt.Sprintf("  ... and %d more entries\n", len(assetHistories)-10)
+				break
+			}
+			content += fmt.Sprintf("  %s: $%.2f\n", 
+				history.Timestamp.Format("2006-01-02 15:04"), 
+				history.PriceUSD)
+		}
+		content += "\n"
+	}
+	
 	content += "Press ESC to go back"
 	return content
 }

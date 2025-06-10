@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/bioharz/budget/internal/models"
+	"github.com/bioharz/budget/test/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 )
@@ -191,7 +192,8 @@ func TestModel_WindowResize(t *testing.T) {
 }
 
 func TestModel_RefreshPrices(t *testing.T) {
-	model := InitialModel()
+	db := helpers.SetupTestDB(t)
+	model := InitialModelWithDB(db)
 	
 	// Add some assets
 	model.assets = []models.Asset{
@@ -248,7 +250,7 @@ func TestModel_ViewRendering(t *testing.T) {
 		{
 			name:     "main view shows budget tracker",
 			view:     ViewMain,
-			contains: "Budget Tracker",
+			contains: "Minimal Money",
 		},
 		{
 			name:     "assets view",
@@ -269,7 +271,13 @@ func TestModel_ViewRendering(t *testing.T) {
 	
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := InitialModel()
+			var model Model
+			if tt.view == ViewHistory {
+				db := helpers.SetupTestDB(t)
+				model = InitialModelWithDB(db)
+			} else {
+				model = InitialModel()
+			}
 			model.view = tt.view
 			if tt.view == ViewAddAsset {
 				model.initAddAssetModal()

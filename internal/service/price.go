@@ -4,19 +4,31 @@ import (
 	"time"
 
 	"github.com/bioharz/budget/internal/api"
+	"github.com/bioharz/budget/internal/db"
 	"github.com/bioharz/budget/internal/models"
 	"github.com/bioharz/budget/internal/repository"
+	"gorm.io/gorm"
 )
 
 type PriceService struct {
-	client    *api.PriceClient
-	assetRepo *repository.AssetRepository
+	client         *api.PriceClient
+	assetRepo      *repository.AssetRepository
+	priceHistoryRepo *repository.PriceHistoryRepository
 }
 
 func NewPriceService() *PriceService {
 	return &PriceService{
-		client:    api.NewPriceClient(),
-		assetRepo: repository.NewAssetRepository(),
+		client:           api.NewPriceClient(),
+		assetRepo:        repository.NewAssetRepository(),
+		priceHistoryRepo: repository.NewPriceHistoryRepository(db.DB),
+	}
+}
+
+func NewPriceServiceWithDB(database *gorm.DB) *PriceService {
+	return &PriceService{
+		client:           api.NewPriceClient(),
+		assetRepo:        repository.NewAssetRepositoryWithDB(database),
+		priceHistoryRepo: repository.NewPriceHistoryRepository(database),
 	}
 }
 
@@ -52,6 +64,8 @@ func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, err
 			for symbol, price := range cryptoPrices {
 				if assetID, ok := cryptoAssetMap[symbol]; ok {
 					prices[assetID] = price
+					// Save price history
+					s.UpdatePriceHistory(assetID, price)
 				}
 			}
 		}
@@ -66,6 +80,8 @@ func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, err
 			for symbol, rate := range fiatRates {
 				if assetID, ok := fiatAssetMap[symbol]; ok {
 					prices[assetID] = rate
+					// Save price history
+					s.UpdatePriceHistory(assetID, rate)
 				}
 			}
 		}
@@ -75,13 +91,19 @@ func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, err
 }
 
 func (s *PriceService) UpdatePriceHistory(assetID uint, price float64) error {
-	priceHistory := models.PriceHistory{
+	priceHistory := &models.PriceHistory{
 		AssetID:   assetID,
 		PriceUSD:  price,
 		Timestamp: time.Now(),
 	}
 	
-	// TODO: Add price history repository and save
-	_ = priceHistory
-	return nil
+	return s.priceHistoryRepo.Create(priceHistory)
+}
+
+func (s *PriceService) GetPriceHistory(assetID uint, limit int) ([]models.PriceHistory, error) {
+	return s.priceHistoryRepo.GetByAssetID(assetID, limit)
+}
+
+func (s *PriceService) GetAllPriceHistories(limit int) (map[uint][]models.PriceHistory, error) {
+	return s.priceHistoryRepo.GetAllAssetHistories(limit)
 }
