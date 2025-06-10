@@ -29,6 +29,7 @@ func Initialize() error {
 	}
 
 	if err := db.AutoMigrate(
+		&models.Account{},
 		&models.Asset{},
 		&models.Holding{},
 		&models.PriceHistory{},

@@ -14,6 +14,16 @@ const (
 	AssetTypeOther  AssetType = "other"
 )
 
+type Account struct {
+	ID        uint           `gorm:"primaryKey"`
+	Name      string         `gorm:"not null"`
+	Type      string         `gorm:"not null"`
+	Color     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
 type Asset struct {
 	ID        uint           `gorm:"primaryKey"`
 	Symbol    string         `gorm:"uniqueIndex;not null"`
@@ -25,13 +35,17 @@ type Asset struct {
 }
 
 type Holding struct {
-	ID        uint           `gorm:"primaryKey"`
-	AssetID   uint           `gorm:"not null"`
-	Asset     Asset          `gorm:"foreignKey:AssetID"`
-	Amount    float64        `gorm:"not null"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ID            uint           `gorm:"primaryKey"`
+	AccountID     uint           `gorm:"not null"`
+	Account       Account        `gorm:"foreignKey:AccountID"`
+	AssetID       uint           `gorm:"not null"`
+	Asset         Asset          `gorm:"foreignKey:AssetID"`
+	Amount        float64        `gorm:"not null"`
+	PurchasePrice float64
+	PurchaseDate  time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
 }
 
 type PriceHistory struct {
