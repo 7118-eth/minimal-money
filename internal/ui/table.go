@@ -115,7 +115,7 @@ func (m *Model) tableView() string {
 	var b strings.Builder
 	
 	// Header
-	header := fmt.Sprintf("💰 Budget Tracker%sTotal: $%.2f", 
+	header := fmt.Sprintf("💰 Asset Tracker%sTotal: $%.2f", 
 		strings.Repeat(" ", 40), total)
 	b.WriteString(totalStyle.Render(header) + "\n\n")
 	
