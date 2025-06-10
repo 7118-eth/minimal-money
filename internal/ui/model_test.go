@@ -201,8 +201,8 @@ func TestModel_RefreshPrices(t *testing.T) {
 		{ID: 2, Symbol: "USD", Type: models.AssetTypeFiat},
 	}
 	
-	// Press 'r' to refresh
-	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")}
+	// Press 'p' to update prices
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")}
 	_, cmd := model.Update(msg)
 	
 	// Should return a command

@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/bioharz/budget/internal/api"
 	"github.com/bioharz/budget/internal/models"
 	"github.com/bioharz/budget/internal/repository"
@@ -8,21 +10,24 @@ import (
 )
 
 type PriceService struct {
-	client    *api.PriceClient
-	assetRepo *repository.AssetRepository
+	client     *api.PriceClient
+	assetRepo  *repository.AssetRepository
+	cacheRepo  *repository.PriceCacheRepository
 }
 
 func NewPriceService() *PriceService {
 	return &PriceService{
-		client:    api.NewPriceClient(),
-		assetRepo: repository.NewAssetRepository(),
+		client:     api.NewPriceClient(),
+		assetRepo:  repository.NewAssetRepository(),
+		cacheRepo:  repository.NewPriceCacheRepository(),
 	}
 }
 
 func NewPriceServiceWithDB(database *gorm.DB) *PriceService {
 	return &PriceService{
-		client:    api.NewPriceClient(),
-		assetRepo: repository.NewAssetRepositoryWithDB(database),
+		client:     api.NewPriceClient(),
+		assetRepo:  repository.NewAssetRepositoryWithDB(database),
+		cacheRepo:  repository.NewPriceCacheRepositoryWithDB(database),
 	}
 }
 
@@ -77,6 +82,29 @@ func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, err
 		}
 	}
 	
+	// Save prices to cache
+	if s.cacheRepo != nil {
+		if err := s.cacheRepo.UpsertBatch(prices); err != nil {
+			// Log error but don't fail the operation
+		}
+	}
+	
 	return prices, nil
+}
+
+// GetCachedPrices returns prices from the cache
+func (s *PriceService) GetCachedPrices() (map[uint]float64, error) {
+	if s.cacheRepo == nil {
+		return make(map[uint]float64), nil
+	}
+	return s.cacheRepo.GetPricesMap()
+}
+
+// GetLastUpdateTime returns when prices were last updated
+func (s *PriceService) GetLastUpdateTime() (*time.Time, error) {
+	if s.cacheRepo == nil {
+		return nil, nil
+	}
+	return s.cacheRepo.GetLastUpdateTime()
 }
 

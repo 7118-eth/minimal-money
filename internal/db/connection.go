@@ -34,6 +34,7 @@ func Initialize() error {
 		&models.Holding{},
 		&models.AuditLog{},
 		&models.PortfolioSnapshot{},
+		&models.PriceCache{},
 	); err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}

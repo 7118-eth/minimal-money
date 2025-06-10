@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bioharz/budget/internal/models"
@@ -29,11 +30,23 @@ var (
 )
 
 func (m *Model) setupTable() {
+	// Calculate column widths based on terminal width
+	availableWidth := m.width - 10 // Account for borders and padding
+	if availableWidth < 80 {
+		availableWidth = 80 // Minimum width
+	}
+	
+	// Distribute width proportionally
+	assetWidth := int(float64(availableWidth) * 0.15)
+	accountWidth := int(float64(availableWidth) * 0.35)
+	amountWidth := int(float64(availableWidth) * 0.25)
+	valueWidth := int(float64(availableWidth) * 0.25)
+	
 	columns := []table.Column{
-		{Title: "Account", Width: 20},
-		{Title: "Asset", Width: 10},
-		{Title: "Amount", Width: 20},
-		{Title: "Value", Width: 20},
+		{Title: "Asset", Width: assetWidth},
+		{Title: "Account", Width: accountWidth},
+		{Title: "Amount", Width: amountWidth},
+		{Title: "Value", Width: valueWidth},
 	}
 
 	rows := m.buildTableRows()
@@ -56,23 +69,57 @@ func (m *Model) setupTable() {
 func (m *Model) buildTableRows() []table.Row {
 	var rows []table.Row
 	
+	// Group holdings by asset
+	assetHoldings := make(map[uint][]models.Holding)
 	for _, holding := range m.holdings {
-		account := m.getAccountByID(holding.AccountID)
-		asset := m.getAssetByID(holding.AssetID)
-		price := m.prices[holding.AssetID]
-		value := holding.Amount * price
-		
-		row := table.Row{
-			account.Name,
-			asset.Symbol,
-			fmt.Sprintf("%.4f", holding.Amount),
-			fmt.Sprintf("$%.2f", value),
-		}
-		rows = append(rows, row)
+		assetHoldings[holding.AssetID] = append(assetHoldings[holding.AssetID], holding)
 	}
 	
-	// Return empty table if no holdings
-	// This will show the headers but no data rows
+	// Sort assets for consistent ordering
+	var assetIDs []uint
+	for assetID := range assetHoldings {
+		assetIDs = append(assetIDs, assetID)
+	}
+	sort.Slice(assetIDs, func(i, j int) bool {
+		// Sort by asset symbol
+		assetI := m.getAssetByID(assetIDs[i])
+		assetJ := m.getAssetByID(assetIDs[j])
+		return assetI.Symbol < assetJ.Symbol
+	})
+	
+	// Build rows with tree structure
+	for _, assetID := range assetIDs {
+		holdings := assetHoldings[assetID]
+		asset := m.getAssetByID(assetID)
+		price := m.prices[assetID]
+		
+		for i, holding := range holdings {
+			account := m.getAccountByID(holding.AccountID)
+			value := holding.Amount * price
+			
+			// Determine tree character
+			var treeChar string
+			if i == len(holdings)-1 {
+				treeChar = "└─ "
+			} else {
+				treeChar = "├─ "
+			}
+			
+			// First holding shows asset, others show tree continuation
+			assetDisplay := ""
+			if i == 0 {
+				assetDisplay = asset.Symbol
+			}
+			
+			row := table.Row{
+				assetDisplay,
+				treeChar + account.Name,
+				fmt.Sprintf("%.4f", holding.Amount),
+				fmt.Sprintf("$%.2f", value),
+			}
+			rows = append(rows, row)
+		}
+	}
 	
 	return rows
 }
@@ -114,16 +161,34 @@ func (m *Model) tableView() string {
 	
 	var b strings.Builder
 	
-	// Header
-	header := fmt.Sprintf("💰 Minimal Money%sTotal: $%.2f", 
-		strings.Repeat(" ", 40), total)
-	b.WriteString(totalStyle.Render(header) + "\n\n")
+	// Header with last update time
+	headerLeft := "💰 Minimal Money"
+	headerRight := fmt.Sprintf("Total: $%.2f", total)
+	headerPadding := m.width - len(headerLeft) - len(headerRight) - 2
+	if headerPadding < 1 {
+		headerPadding = 1
+	}
+	header := headerLeft + strings.Repeat(" ", headerPadding) + headerRight
+	b.WriteString(totalStyle.Render(header) + "\n")
+	
+	// Last update time
+	if m.lastPriceUpdate != nil {
+		updateText := fmt.Sprintf("Last Update: %s", m.lastPriceUpdate.Format("2006-01-02 15:04:05"))
+		updatePadding := m.width - len(updateText) - 2
+		if updatePadding < 0 {
+			updatePadding = 0
+		}
+		updateTime := strings.Repeat(" ", updatePadding) + updateText
+		b.WriteString(updateTime + "\n\n")
+	} else {
+		b.WriteString("\n")
+	}
 	
 	// Table
 	b.WriteString(baseStyle.Render(m.table.View()) + "\n\n")
 	
 	// Footer
-	footer := "[n]ew  [e]dit  [d]elete  [r]efresh  [h]istory  [q]uit"
+	footer := "[n]ew  [e]dit  [d]elete  [p]rice update  [h]istory  [q]uit"
 	b.WriteString(footer)
 	
 	return b.String()

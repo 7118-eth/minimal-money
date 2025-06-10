@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bioharz/budget/internal/models"
 	"github.com/bioharz/budget/internal/repository"
@@ -38,6 +39,7 @@ type Model struct {
 	priceService *service.PriceService
 	auditService *service.AuditService
 	deletingHoldingID uint
+	lastPriceUpdate   *time.Time
 }
 
 func InitialModel() Model {
@@ -49,6 +51,8 @@ func InitialModel() Model {
 		holdings:     []models.Holding{},
 		priceService: service.NewPriceService(),
 		auditService: service.NewAuditService(),
+		width:        120, // Default width
+		height:       30,  // Default height
 	}
 	m.setupTable()
 	return m
@@ -63,6 +67,8 @@ func InitialModelWithDB(db *gorm.DB) Model {
 		holdings:     []models.Holding{},
 		priceService: service.NewPriceServiceWithDB(db),
 		auditService: service.NewAuditServiceWithDB(db),
+		width:        120, // Default width
+		height:       30,  // Default height
 	}
 	m.setupTable()
 	return m
@@ -133,7 +139,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.editSelectedHolding()
 		case "d":
 			m.deleteSelectedHolding()
-		case "r":
+		case "p":
 			return m, m.refreshPrices()
 		case "h":
 			m.view = ViewHistory
@@ -153,12 +159,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		if m.view == ViewMain {
+			// Recreate table with new dimensions
+			m.setupTable()
 			m.table.SetHeight(msg.Height - 8)
+			m.updateTableData()
 		}
 		
 	case priceUpdateMsg:
 		if msg.err == nil && msg.prices != nil {
 			m.prices = msg.prices
+			// Update last price update time
+			lastUpdate, _ := m.priceService.GetLastUpdateTime()
+			m.lastPriceUpdate = lastUpdate
 			m.updateTableData()
 		}
 		
@@ -167,9 +179,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.assets = msg.assets
 		m.holdings = msg.holdings
 		m.updateTableData()
-		// After loading data, fetch prices
-		if len(m.assets) > 0 {
-			return m, m.refreshPrices()
+		
+		// Load cached prices
+		if m.priceService != nil && len(m.assets) > 0 {
+			cachedPrices, _ := m.priceService.GetCachedPrices()
+			if len(cachedPrices) > 0 {
+				m.prices = cachedPrices
+				lastUpdate, _ := m.priceService.GetLastUpdateTime()
+				m.lastPriceUpdate = lastUpdate
+				m.updateTableData()
+			}
 		}
 	}
 

@@ -81,3 +81,11 @@ type PortfolioSnapshot struct {
 	Details      map[string]interface{} `gorm:"serializer:json"`
 	Timestamp    time.Time              `gorm:"not null;index"`
 }
+
+type PriceCache struct {
+	ID         uint      `gorm:"primaryKey"`
+	AssetID    uint      `gorm:"uniqueIndex;not null"`
+	Asset      Asset     `gorm:"foreignKey:AssetID"`
+	PriceUSD   float64   `gorm:"not null"`
+	UpdatedAt  time.Time `gorm:"not null;index"`
+}
