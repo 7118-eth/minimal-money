@@ -75,16 +75,25 @@ func (m *Model) buildTableRows() []table.Row {
 		assetHoldings[holding.AssetID] = append(assetHoldings[holding.AssetID], holding)
 	}
 	
-	// Sort assets for consistent ordering
+	// Calculate total value per asset
+	assetTotalValues := make(map[uint]float64)
+	for assetID, holdings := range assetHoldings {
+		price := m.prices[assetID]
+		totalValue := 0.0
+		for _, holding := range holdings {
+			totalValue += holding.Amount * price
+		}
+		assetTotalValues[assetID] = totalValue
+	}
+	
+	// Sort assets by total value (highest first)
 	var assetIDs []uint
 	for assetID := range assetHoldings {
 		assetIDs = append(assetIDs, assetID)
 	}
 	sort.Slice(assetIDs, func(i, j int) bool {
-		// Sort by asset symbol
-		assetI := m.getAssetByID(assetIDs[i])
-		assetJ := m.getAssetByID(assetIDs[j])
-		return assetI.Symbol < assetJ.Symbol
+		// Sort by total value descending
+		return assetTotalValues[assetIDs[i]] > assetTotalValues[assetIDs[j]]
 	})
 	
 	// Build rows with tree structure
