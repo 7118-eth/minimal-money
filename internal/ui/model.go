@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/bioharz/budget/internal/models"
 	"github.com/bioharz/budget/internal/repository"
+	"github.com/bioharz/budget/internal/service"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -30,15 +31,17 @@ type Model struct {
 	inputBuffer  string
 	inputMode    bool
 	modalState   ModalState
+	priceService *service.PriceService
 }
 
 func InitialModel() Model {
 	m := Model{
-		view:     ViewMain,
-		prices:   make(map[uint]float64),
-		accounts: []models.Account{},
-		assets:   []models.Asset{},
-		holdings: []models.Holding{},
+		view:         ViewMain,
+		prices:       make(map[uint]float64),
+		accounts:     []models.Account{},
+		assets:       []models.Asset{},
+		holdings:     []models.Holding{},
+		priceService: service.NewPriceService(),
 	}
 	m.setupTable()
 	return m
@@ -97,7 +100,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "d":
 			// TODO: Delete selected holding
 		case "r":
-			// TODO: Refresh prices
+			return m, m.refreshPrices()
 		case "h":
 			m.view = ViewHistory
 		case "esc":
@@ -114,6 +117,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		if m.view == ViewMain {
 			m.table.SetHeight(msg.Height - 8)
+		}
+		
+	case priceUpdateMsg:
+		if msg.err == nil && msg.prices != nil {
+			m.prices = msg.prices
+			m.updateTableData()
 		}
 	}
 
@@ -181,4 +190,33 @@ func (m *Model) loadData() {
 
 	// Update table with new data
 	m.updateTableData()
+	
+	// Fetch initial prices
+	if len(m.assets) > 0 {
+		prices, err := m.priceService.FetchPrices(m.assets)
+		if err == nil {
+			m.prices = prices
+			m.updateTableData()
+		}
+	}
+}
+
+func (m Model) refreshPrices() tea.Cmd {
+	return func() tea.Msg {
+		if m.priceService == nil || len(m.assets) == 0 {
+			return nil
+		}
+		
+		prices, err := m.priceService.FetchPrices(m.assets)
+		if err != nil {
+			return priceUpdateMsg{err: err}
+		}
+		
+		return priceUpdateMsg{prices: prices}
+	}
+}
+
+type priceUpdateMsg struct {
+	prices map[uint]float64
+	err    error
 }
