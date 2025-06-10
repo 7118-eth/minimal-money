@@ -265,7 +265,7 @@ func TestModel_ViewRendering(t *testing.T) {
 		{
 			name:     "history view",
 			view:     ViewHistory,
-			contains: "Price History",
+			contains: "Audit Trail",
 		},
 	}
 	

@@ -48,12 +48,31 @@ type Holding struct {
 	DeletedAt     gorm.DeletedAt `gorm:"index"`
 }
 
-type PriceHistory struct {
-	ID        uint      `gorm:"primaryKey"`
-	AssetID   uint      `gorm:"not null;index"`
-	Asset     Asset     `gorm:"foreignKey:AssetID"`
-	PriceUSD  float64   `gorm:"not null"`
-	Timestamp time.Time `gorm:"not null;index"`
+type AuditLogAction string
+
+const (
+	AuditActionCreate AuditLogAction = "CREATE"
+	AuditActionUpdate AuditLogAction = "UPDATE"
+	AuditActionDelete AuditLogAction = "DELETE"
+)
+
+type AuditLogEntityType string
+
+const (
+	AuditEntityHolding AuditLogEntityType = "HOLDING"
+	AuditEntityAsset   AuditLogEntityType = "ASSET"
+	AuditEntityAccount AuditLogEntityType = "ACCOUNT"
+)
+
+type AuditLog struct {
+	ID         uint               `gorm:"primaryKey"`
+	Action     AuditLogAction     `gorm:"not null"`
+	EntityType AuditLogEntityType `gorm:"not null"`
+	EntityID   uint               `gorm:"not null"`
+	OldValue   string             `gorm:"type:text"` // JSON representation
+	NewValue   string             `gorm:"type:text"` // JSON representation
+	UserNote   string
+	CreatedAt  time.Time          `gorm:"not null;index"`
 }
 
 type PortfolioSnapshot struct {

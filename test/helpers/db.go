@@ -37,7 +37,7 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		&models.Account{},
 		&models.Asset{},
 		&models.Holding{},
-		&models.PriceHistory{},
+		&models.AuditLog{},
 		&models.PortfolioSnapshot{},
 	)
 	require.NoError(t, err)

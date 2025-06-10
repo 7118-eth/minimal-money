@@ -202,6 +202,15 @@ func (m *Model) saveAsset() {
 	holdingRepo := repository.NewHoldingRepository()
 	
 	if m.modalState.IsEdit {
+		// Get old holding for audit log
+		var oldHolding models.Holding
+		for _, h := range m.holdings {
+			if h.ID == m.modalState.EditingHoldingID {
+				oldHolding = h
+				break
+			}
+		}
+
 		// Update existing holding
 		holding := models.Holding{
 			ID:            m.modalState.EditingHoldingID,
@@ -216,6 +225,12 @@ func (m *Model) saveAsset() {
 			m.modalState.ErrorMessage = "Failed to update holding"
 			return
 		}
+
+		// Log the update to audit trail
+		if m.auditService != nil && oldHolding.ID != 0 {
+			holding.PurchaseDate = oldHolding.PurchaseDate // Preserve purchase date for audit
+			m.auditService.LogHoldingUpdate(&oldHolding, &holding)
+		}
 	} else {
 		// Create new holding
 		holding := models.Holding{
@@ -229,6 +244,11 @@ func (m *Model) saveAsset() {
 			m.modalState.ShowError = true
 			m.modalState.ErrorMessage = "Failed to create holding"
 			return
+		}
+
+		// Log the creation to audit trail
+		if m.auditService != nil {
+			m.auditService.LogHoldingCreate(&holding)
 		}
 	}
 

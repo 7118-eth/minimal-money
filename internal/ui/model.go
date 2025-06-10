@@ -36,6 +36,7 @@ type Model struct {
 	inputMode    bool
 	modalState   ModalState
 	priceService *service.PriceService
+	auditService *service.AuditService
 	deletingHoldingID uint
 }
 
@@ -47,6 +48,7 @@ func InitialModel() Model {
 		assets:       []models.Asset{},
 		holdings:     []models.Holding{},
 		priceService: service.NewPriceService(),
+		auditService: service.NewAuditService(),
 	}
 	m.setupTable()
 	return m
@@ -60,6 +62,7 @@ func InitialModelWithDB(db *gorm.DB) Model {
 		assets:       []models.Asset{},
 		holdings:     []models.Holding{},
 		priceService: service.NewPriceServiceWithDB(db),
+		auditService: service.NewAuditServiceWithDB(db),
 	}
 	m.setupTable()
 	return m
@@ -206,42 +209,50 @@ func (m Model) addAssetView() string {
 }
 
 func (m Model) historyView() string {
-	content := "📈 Price History (Last 20 entries per asset)\n\n"
+	content := "📜 Audit Trail (Last 50 changes)\n\n"
 	
-	// Get all price histories
-	histories, err := m.priceService.GetAllPriceHistories(20)
+	// Get audit logs
+	logs, err := m.auditService.GetAllLogs(50)
 	if err != nil {
-		content += fmt.Sprintf("Error fetching history: %v\n\n", err)
+		content += fmt.Sprintf("Error fetching audit logs: %v\n\n", err)
 		content += "Press ESC to go back"
 		return content
 	}
 	
-	if len(histories) == 0 {
-		content += "No history data available yet.\n"
-		content += "Price history will be recorded when you refresh prices.\n\n"
+	if len(logs) == 0 {
+		content += "No audit history available yet.\n"
+		content += "Changes to your portfolio will be tracked here.\n\n"
 		content += "Press ESC to go back"
 		return content
 	}
 	
-	// Display history for each asset
-	for assetID, assetHistories := range histories {
-		asset := m.getAssetByID(assetID)
-		content += fmt.Sprintf("▶ %s (%s)\n", asset.Name, asset.Symbol)
-		content += "─────────────────────────────────────────\n"
-		
-		for i, history := range assetHistories {
-			if i >= 10 { // Limit to 10 entries per asset for display
-				content += fmt.Sprintf("  ... and %d more entries\n", len(assetHistories)-10)
-				break
-			}
-			content += fmt.Sprintf("  %s: $%.2f\n", 
-				history.Timestamp.Format("2006-01-02 15:04"), 
-				history.PriceUSD)
+	// Display audit logs
+	for _, log := range logs {
+		// Format action with emoji
+		actionIcon := ""
+		switch log.Action {
+		case models.AuditActionCreate:
+			actionIcon = "➕"
+		case models.AuditActionUpdate:
+			actionIcon = "✏️"
+		case models.AuditActionDelete:
+			actionIcon = "🗑️"
 		}
-		content += "\n"
+		
+		content += fmt.Sprintf("%s %s - %s\n", 
+			log.CreatedAt.Format("2006-01-02 15:04"),
+			actionIcon,
+			log.Action)
+		
+		// Parse and display the changes
+		if log.EntityType == models.AuditEntityHolding {
+			content += m.formatHoldingChange(log)
+		}
+		
+		content += "───────────────────────────────────\n"
 	}
 	
-	content += "Press ESC to go back"
+	content += "\nPress ESC to go back"
 	return content
 }
 
@@ -373,11 +384,25 @@ func (m *Model) deleteSelectedHolding() {
 }
 
 func (m *Model) confirmDelete() {
+	// Find the holding before deletion for audit log
+	var holdingToDelete models.Holding
+	for _, h := range m.holdings {
+		if h.ID == m.deletingHoldingID {
+			holdingToDelete = h
+			break
+		}
+	}
+
 	// Delete from database
 	holdingRepo := repository.NewHoldingRepository()
 	if err := holdingRepo.Delete(m.deletingHoldingID); err != nil {
 		m.err = err
 		return
+	}
+
+	// Log the deletion to audit trail
+	if m.auditService != nil && holdingToDelete.ID != 0 {
+		m.auditService.LogHoldingDelete(&holdingToDelete)
 	}
 
 	// Reload data and return to main view
