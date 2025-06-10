@@ -30,13 +30,10 @@ var (
 
 func (m *Model) setupTable() {
 	columns := []table.Column{
-		{Title: "Account", Width: 12},
-		{Title: "Asset", Width: 8},
-		{Title: "Amount", Width: 12},
-		{Title: "Price", Width: 10},
-		{Title: "Value", Width: 12},
-		{Title: "24h%", Width: 8},
-		{Title: "P&L", Width: 10},
+		{Title: "Account", Width: 20},
+		{Title: "Asset", Width: 10},
+		{Title: "Amount", Width: 20},
+		{Title: "Value", Width: 20},
 	}
 
 	rows := m.buildTableRows()
@@ -65,19 +62,11 @@ func (m *Model) buildTableRows() []table.Row {
 		price := m.prices[holding.AssetID]
 		value := holding.Amount * price
 		
-		var pl float64
-		if holding.PurchasePrice > 0 {
-			pl = (price - holding.PurchasePrice) * holding.Amount
-		}
-		
 		row := table.Row{
 			account.Name,
 			asset.Symbol,
 			fmt.Sprintf("%.4f", holding.Amount),
-			fmt.Sprintf("$%.2f", price),
 			fmt.Sprintf("$%.2f", value),
-			"+0.0%", // TODO: implement 24h change
-			fmt.Sprintf("$%.2f", pl),
 		}
 		rows = append(rows, row)
 	}

@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/bioharz/budget/internal/models"
 	"github.com/bioharz/budget/internal/repository"
 	"github.com/bioharz/budget/internal/service"
@@ -11,10 +13,11 @@ import (
 type View string
 
 const (
-	ViewMain      View = "main"
-	ViewAssets    View = "assets"
-	ViewAddAsset  View = "add_asset"
-	ViewHistory   View = "history"
+	ViewMain          View = "main"
+	ViewAssets        View = "assets"
+	ViewAddAsset      View = "add_asset"
+	ViewHistory       View = "history"
+	ViewDeleteConfirm View = "delete_confirm"
 )
 
 type Model struct {
@@ -32,6 +35,7 @@ type Model struct {
 	inputMode    bool
 	modalState   ModalState
 	priceService *service.PriceService
+	deletingHoldingID uint
 }
 
 func InitialModel() Model {
@@ -88,6 +92,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		
+		// Handle delete confirmation view
+		if m.view == ViewDeleteConfirm {
+			switch msg.String() {
+			case "y", "Y":
+				m.confirmDelete()
+			case "n", "N", "esc":
+				m.view = ViewMain
+				m.deletingHoldingID = 0
+			}
+			return m, nil
+		}
+		
 		// Main table view keyboard handling
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -105,6 +121,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "h":
 			m.view = ViewHistory
 		case "esc":
+			if m.view == ViewDeleteConfirm {
+				m.deletingHoldingID = 0
+			}
 			m.view = ViewMain
 		default:
 			// Pass through to table for navigation
@@ -150,6 +169,8 @@ func (m Model) View() string {
 		return m.addAssetView()
 	case ViewHistory:
 		return m.historyView()
+	case ViewDeleteConfirm:
+		return m.deleteConfirmView()
 	default:
 		return "Unknown view"
 	}
@@ -174,6 +195,37 @@ func (m Model) historyView() string {
 	content := "📈 Price History\n\n"
 	content += "No history data available yet.\n\n"
 	content += "Press ESC to go back"
+	return content
+}
+
+func (m Model) deleteConfirmView() string {
+	// Find the holding details
+	var holding models.Holding
+	for _, h := range m.holdings {
+		if h.ID == m.deletingHoldingID {
+			holding = h
+			break
+		}
+	}
+	
+	account := m.getAccountByID(holding.AccountID)
+	asset := m.getAssetByID(holding.AssetID)
+	value := holding.Amount * m.prices[holding.AssetID]
+	
+	content := m.tableView() + "\n\n"
+	content += "┌─────────────────────────────────────────────┐\n"
+	content += "│          Confirm Delete                     │\n"
+	content += "├─────────────────────────────────────────────┤\n"
+	content += fmt.Sprintf("│ Account: %-34s │\n", account.Name)
+	content += fmt.Sprintf("│ Asset:   %-34s │\n", asset.Symbol)
+	content += fmt.Sprintf("│ Amount:  %-34.4f │\n", holding.Amount)
+	content += fmt.Sprintf("│ Value:   $%-33.2f │\n", value)
+	content += "│                                             │\n"
+	content += "│ Are you sure you want to delete this?      │\n"
+	content += "│                                             │\n"
+	content += "│        [Y]es     [N]o / [ESC]              │\n"
+	content += "└─────────────────────────────────────────────┘"
+	
 	return content
 }
 
@@ -269,16 +321,22 @@ func (m *Model) deleteSelectedHolding() {
 
 	// Get the holding to delete
 	holding := m.holdings[selectedRow]
+	m.deletingHoldingID = holding.ID
+	m.view = ViewDeleteConfirm
+}
 
+func (m *Model) confirmDelete() {
 	// Delete from database
 	holdingRepo := repository.NewHoldingRepository()
-	if err := holdingRepo.Delete(holding.ID); err != nil {
+	if err := holdingRepo.Delete(m.deletingHoldingID); err != nil {
 		m.err = err
 		return
 	}
 
-	// Reload data
+	// Reload data and return to main view
 	m.loadData()
+	m.view = ViewMain
+	m.deletingHoldingID = 0
 }
 
 func (m *Model) editSelectedHolding() {
