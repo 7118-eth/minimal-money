@@ -48,25 +48,47 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !m.inputMode {
 				return m, tea.Quit
 			}
-		case "1":
-			if m.view == ViewMain && !m.inputMode {
-				m.view = ViewAssets
-			}
-		case "2":
-			if m.view == ViewMain && !m.inputMode {
-				m.view = ViewAddAsset
-				m.inputMode = true
-			}
-		case "3":
-			if m.view == ViewMain && !m.inputMode {
-				m.view = ViewHistory
-			}
-		case "escape":
+		case "esc":
 			if m.inputMode {
 				m.inputMode = false
 				m.inputBuffer = ""
 			}
 			m.view = ViewMain
+			return m, nil
+		case "enter":
+			if m.inputMode && m.view == ViewAddAsset {
+				// TODO: Process the input
+				m.inputMode = false
+				m.inputBuffer = ""
+				m.view = ViewMain
+			}
+			return m, nil
+		case "backspace":
+			if m.inputMode && len(m.inputBuffer) > 0 {
+				m.inputBuffer = m.inputBuffer[:len(m.inputBuffer)-1]
+			}
+			return m, nil
+		default:
+			if m.inputMode {
+				m.inputBuffer += msg.String()
+				return m, nil
+			}
+			
+			switch msg.String() {
+			case "1":
+				if m.view == ViewMain {
+					m.view = ViewAssets
+				}
+			case "2":
+				if m.view == ViewMain {
+					m.view = ViewAddAsset
+					m.inputMode = true
+				}
+			case "3":
+				if m.view == ViewMain {
+					m.view = ViewHistory
+				}
+			}
 		}
 
 	case tea.WindowSizeMsg:
@@ -94,7 +116,7 @@ func (m Model) View() string {
 
 func (m Model) mainView() string {
 	return `
-Budget Tracker
+💰 Budget Tracker
 
 1. View Assets
 2. Add Asset
@@ -105,13 +127,26 @@ Choose an option: `
 }
 
 func (m Model) assetsView() string {
-	return "Assets view (ESC to go back)"
+	content := "📊 Your Assets\n\n"
+	content += "No assets yet. Press 2 from main menu to add assets.\n\n"
+	content += "Press ESC to go back"
+	return content
 }
 
 func (m Model) addAssetView() string {
-	return "Add asset view (ESC to go back)\n\nEnter asset symbol: " + m.inputBuffer
+	content := "➕ Add New Asset\n\n"
+	content += "Enter asset symbol (e.g., BTC, ETH, USD, EUR): " + m.inputBuffer
+	if m.inputMode {
+		content += "█"
+	}
+	content += "\n\n"
+	content += "Press ENTER to add, ESC to cancel"
+	return content
 }
 
 func (m Model) historyView() string {
-	return "History view (ESC to go back)"
+	content := "📈 Price History\n\n"
+	content += "No history data available yet.\n\n"
+	content += "Press ESC to go back"
+	return content
 }
