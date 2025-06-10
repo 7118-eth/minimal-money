@@ -5,7 +5,7 @@ all: build
 
 # Build the application
 build:
-	go build -o budget cmd/budget/main.go
+	go build -o minimal-money cmd/budget/main.go
 
 # Run the application
 run:
@@ -48,7 +48,7 @@ test-clean:
 
 # Clean all artifacts
 clean: test-clean
-	rm -f budget
+	rm -f minimal-money
 	rm -f coverage.out coverage.html
 
 # Format code

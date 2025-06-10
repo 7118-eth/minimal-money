@@ -6,7 +6,7 @@
 go run cmd/budget/main.go
 
 # Build
-go build -o budget cmd/budget/main.go
+go build -o minimal-money cmd/budget/main.go
 
 # Test (all with real APIs)
 make test
@@ -26,7 +26,7 @@ make test-clean
 
 ## Project Structure
 ```
-budget/
+minimal-money/
 ├── cmd/budget/         # Main entry point
 ├── internal/           # Core logic
 │   ├── api/           # Price API clients
