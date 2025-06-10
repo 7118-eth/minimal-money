@@ -152,9 +152,9 @@ func (m *Model) buildTableRows() []table.Row {
 			// Determine tree character
 			var treeChar string
 			if i == len(holdings)-1 {
-				treeChar = "  └─ "
+				treeChar = "└─ "
 			} else {
-				treeChar = "  ├─ "
+				treeChar = "├─ "
 			}
 			
 			// Format amount based on asset type
@@ -166,9 +166,9 @@ func (m *Model) buildTableRows() []table.Row {
 			}
 			
 			row := table.Row{
-				treeChar + account.Name,
-				amountStr,
-				fmt.Sprintf("$%.2f", value),
+				"  " + treeChar + account.Name,
+				"  " + treeChar + amountStr,
+				"  " + treeChar + fmt.Sprintf("$%.2f", value),
 			}
 			rows = append(rows, row)
 		}
