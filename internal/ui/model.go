@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/bioharz/budget/internal/models"
+	"github.com/bioharz/budget/internal/repository"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -44,6 +45,8 @@ func InitialModel() Model {
 }
 
 func (m Model) Init() tea.Cmd {
+	// Load initial data
+	m.loadData()
 	return nil
 }
 
@@ -152,4 +155,30 @@ func (m Model) historyView() string {
 	content += "No history data available yet.\n\n"
 	content += "Press ESC to go back"
 	return content
+}
+
+func (m *Model) loadData() {
+	// Load accounts
+	accountRepo := repository.NewAccountRepository()
+	accounts, err := accountRepo.GetAll()
+	if err == nil {
+		m.accounts = accounts
+	}
+
+	// Load assets
+	assetRepo := repository.NewAssetRepository()
+	assets, err := assetRepo.GetAll()
+	if err == nil {
+		m.assets = assets
+	}
+
+	// Load holdings
+	holdingRepo := repository.NewHoldingRepository()
+	holdings, err := holdingRepo.GetAll()
+	if err == nil {
+		m.holdings = holdings
+	}
+
+	// Update table with new data
+	m.updateTableData()
 }

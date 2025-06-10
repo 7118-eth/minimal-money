@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/bioharz/budget/internal/models"
+	"github.com/bioharz/budget/internal/repository"
 	"github.com/charmbracelet/lipgloss"
+	"gorm.io/gorm"
 )
 
 type InputField struct {
@@ -104,12 +108,12 @@ func (m *Model) handleModalInput(key string) {
 
 func (m *Model) saveAsset() {
 	// Validate inputs
-	account := strings.TrimSpace(m.modalState.Fields[0].Value)
-	asset := strings.TrimSpace(m.modalState.Fields[1].Value)
+	accountName := strings.TrimSpace(m.modalState.Fields[0].Value)
+	assetSymbol := strings.TrimSpace(m.modalState.Fields[1].Value)
 	amountStr := strings.TrimSpace(m.modalState.Fields[2].Value)
 	priceStr := strings.TrimSpace(m.modalState.Fields[3].Value)
 
-	if account == "" || asset == "" || amountStr == "" {
+	if accountName == "" || assetSymbol == "" || amountStr == "" {
 		m.modalState.ShowError = true
 		m.modalState.ErrorMessage = "Account, Asset, and Amount are required"
 		return
@@ -132,8 +136,64 @@ func (m *Model) saveAsset() {
 		}
 	}
 
-	// TODO: Save to database
-	// For now, just close the modal
+	// Get or create account
+	accountRepo := repository.NewAccountRepository()
+	account, err := accountRepo.GetByName(accountName)
+	if err == gorm.ErrRecordNotFound {
+		account = models.Account{
+			Name: accountName,
+			Type: "unknown", // TODO: Add account type selection
+		}
+		if err := accountRepo.Create(&account); err != nil {
+			m.modalState.ShowError = true
+			m.modalState.ErrorMessage = "Failed to create account"
+			return
+		}
+	} else if err != nil {
+		m.modalState.ShowError = true
+		m.modalState.ErrorMessage = "Database error"
+		return
+	}
+
+	// Get or create asset
+	assetRepo := repository.NewAssetRepository()
+	asset, err := assetRepo.GetBySymbol(strings.ToUpper(assetSymbol))
+	if err == gorm.ErrRecordNotFound {
+		// Determine asset type based on symbol
+		assetType := m.guessAssetType(assetSymbol)
+		asset = models.Asset{
+			Symbol: strings.ToUpper(assetSymbol),
+			Name:   assetSymbol, // TODO: Fetch proper name from API
+			Type:   assetType,
+		}
+		if err := assetRepo.Create(&asset); err != nil {
+			m.modalState.ShowError = true
+			m.modalState.ErrorMessage = "Failed to create asset"
+			return
+		}
+	} else if err != nil {
+		m.modalState.ShowError = true
+		m.modalState.ErrorMessage = "Database error"
+		return
+	}
+
+	// Create holding
+	holdingRepo := repository.NewHoldingRepository()
+	holding := models.Holding{
+		AccountID:     account.ID,
+		AssetID:       asset.ID,
+		Amount:        amount,
+		PurchasePrice: purchasePrice,
+		PurchaseDate:  time.Now(),
+	}
+	if err := holdingRepo.Create(&holding); err != nil {
+		m.modalState.ShowError = true
+		m.modalState.ErrorMessage = "Failed to create holding"
+		return
+	}
+
+	// Success - reload data and close modal
+	m.loadData()
 	m.view = ViewMain
 	m.inputMode = false
 	m.modalState = ModalState{}
@@ -188,4 +248,27 @@ func (m *Model) renderAddAssetModal() string {
 	b.WriteString(strings.Repeat(" ", 15) + buttons)
 
 	return modalStyle.Render(b.String())
+}
+
+func (m *Model) guessAssetType(symbol string) models.AssetType {
+	symbol = strings.ToUpper(symbol)
+	
+	// Common fiat currencies
+	fiatSymbols := []string{"USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD"}
+	for _, fiat := range fiatSymbols {
+		if symbol == fiat {
+			return models.AssetTypeFiat
+		}
+	}
+	
+	// Common crypto currencies
+	cryptoSymbols := []string{"BTC", "ETH", "USDT", "USDC", "BNB", "XRP", "SOL", "ADA"}
+	for _, crypto := range cryptoSymbols {
+		if symbol == crypto {
+			return models.AssetTypeCrypto
+		}
+	}
+	
+	// Default to crypto for unknown symbols
+	return models.AssetTypeCrypto
 }
