@@ -1,0 +1,62 @@
+#!/bin/sh
+# Pre-commit hook for Minimal Money
+# Ensures code is properly formatted and passes linting before commit
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if gofmt is available
+if ! command -v gofmt &> /dev/null; then
+    echo "${RED}❌ gofmt is not installed. Please install Go.${NC}"
+    exit 1
+fi
+
+# Run gofmt check
+echo "📝 Checking code formatting..."
+UNFORMATTED=$(gofmt -l .)
+if [ -n "$UNFORMATTED" ]; then
+    echo "${RED}❌ The following files are not properly formatted:${NC}"
+    echo "$UNFORMATTED"
+    echo "${YELLOW}💡 Run 'make fmt' or 'gofmt -w .' to fix formatting${NC}"
+    exit 1
+fi
+echo "${GREEN}✅ Code formatting check passed${NC}"
+
+# Check if golangci-lint is installed
+if ! command -v golangci-lint &> /dev/null; then
+    # Try to use the Go-installed version
+    if [ -x "$(go env GOPATH)/bin/golangci-lint" ]; then
+        GOLANGCI_LINT="$(go env GOPATH)/bin/golangci-lint"
+    else
+        echo "${YELLOW}⚠️  golangci-lint is not installed. Skipping lint check.${NC}"
+        echo "${YELLOW}💡 Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest${NC}"
+        exit 0
+    fi
+else
+    GOLANGCI_LINT="golangci-lint"
+fi
+
+# Run golangci-lint
+echo "🔧 Running linter..."
+if ! $GOLANGCI_LINT run --timeout=2m; then
+    echo "${RED}❌ Linting failed. Please fix the issues above.${NC}"
+    exit 1
+fi
+echo "${GREEN}✅ Linting check passed${NC}"
+
+# Run fast tests to ensure nothing is broken
+echo "🧪 Running fast tests..."
+if ! go test -short ./... > /dev/null 2>&1; then
+    echo "${RED}❌ Tests failed. Please fix failing tests.${NC}"
+    exit 1
+fi
+echo "${GREEN}✅ Tests passed${NC}"
+
+echo "${GREEN}✨ All pre-commit checks passed!${NC}"

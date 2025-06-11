@@ -95,6 +95,18 @@ make build
 
 ## 🛠 Development
 
+### Setup
+
+```bash
+# Install development tools
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Install git hooks (optional but recommended)
+make install-hooks
+```
+
+### Commands
+
 ```bash
 # Run directly
 make run
@@ -109,7 +121,44 @@ make test-clean
 
 # Format code
 make fmt
+
+# Run linter
+make lint
+
+# Run both formatting and linting
+make check
 ```
+
+### Git Hooks
+
+This project includes pre-commit hooks that automatically:
+- Check code formatting with `gofmt`
+- Run linting with `golangci-lint`
+- Execute fast tests
+
+To skip hooks temporarily: `git commit --no-verify`
+
+### Code Quality Tools
+
+#### golangci-lint
+
+We use [golangci-lint](https://golangci-lint.run/) for comprehensive code analysis:
+
+```bash
+# Install
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Run all linters
+golangci-lint run
+
+# Run with specific linter
+golangci-lint run --enable-only gofmt
+
+# Auto-fix issues (where possible)
+golangci-lint run --fix
+```
+
+Configuration: `.golangci.yml` (simplified for CI compatibility)
 
 ## 🏗 Architecture
 
@@ -147,6 +196,71 @@ This project uses GitHub Actions for continuous integration and deployment:
 
 ![CI](https://github.com/7118-eth/minimal-money/workflows/CI/badge.svg)
 ![golangci-lint](https://github.com/7118-eth/minimal-money/workflows/golangci-lint/badge.svg)
+
+### Testing Workflows Locally
+
+You can test GitHub Actions workflows locally before pushing:
+
+#### Using act
+
+[act](https://github.com/nektos/act) runs your workflows locally in Docker containers:
+
+```bash
+# Install act
+brew install act              # macOS
+# or
+curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash  # Linux
+
+# List available workflows
+act -l
+
+# Run the default push event
+act
+
+# Run a specific workflow
+act -W .github/workflows/ci.yml
+
+# Run with specific event
+act pull_request
+
+# Run a specific job
+act -j test-fast
+
+# See what actions would run (dry run)
+act -n
+```
+
+#### Using GitHub CLI
+
+```bash
+# Manually trigger a workflow run
+gh workflow run ci.yml
+
+# View workflow runs
+gh run list
+
+# Watch a workflow run
+gh run watch
+
+# View workflow run details
+gh run view <run-id>
+
+# Download workflow artifacts
+gh run download <run-id>
+```
+
+#### Docker Alternative
+
+If you prefer Docker directly:
+
+```bash
+# Run act in Docker
+docker run --rm -it \
+  -v "$PWD:/workspace" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -w /workspace \
+  nektos/act
+```
 
 ## 🤝 Contributing
 

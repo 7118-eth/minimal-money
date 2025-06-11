@@ -1,4 +1,4 @@
-.PHONY: all build run test test-all test-fast test-coverage test-race test-clean clean
+.PHONY: all build run test test-all test-fast test-coverage test-race test-clean clean fmt lint check install-hooks
 
 # Default target
 all: build
@@ -54,6 +54,24 @@ clean: test-clean
 # Format code
 fmt:
 	go fmt ./...
+
+# Run linter
+lint:
+	@if command -v golangci-lint >/dev/null 2>&1; then \
+		golangci-lint run; \
+	elif [ -x "$$(go env GOPATH)/bin/golangci-lint" ]; then \
+		$$(go env GOPATH)/bin/golangci-lint run; \
+	else \
+		echo "golangci-lint not found. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		exit 1; \
+	fi
+
+# Run formatting and linting
+check: fmt lint
+
+# Install git hooks
+install-hooks:
+	@./scripts/install-hooks.sh
 
 # Install dependencies
 deps:
