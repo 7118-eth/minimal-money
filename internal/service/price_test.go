@@ -12,7 +12,10 @@ import (
 func TestPriceService_FetchPrices(t *testing.T) {
 	helpers.SkipIfShort(t)
 	
-	service := NewPriceService()
+	// Set up test database
+	testDB := helpers.SetupTestDB(t)
+	
+	service := NewPriceServiceWithDB(testDB)
 	
 	t.Run("fetch mixed asset types", func(t *testing.T) {
 		helpers.RateLimitDelay()
@@ -85,7 +88,10 @@ func TestPriceService_FetchPrices(t *testing.T) {
 func TestPriceService_RealPortfolio(t *testing.T) {
 	helpers.SkipIfShort(t)
 	
-	service := NewPriceService()
+	// Set up test database
+	testDB := helpers.SetupTestDB(t)
+	
+	service := NewPriceServiceWithDB(testDB)
 	
 	// Simulate a realistic portfolio
 	portfolio := []models.Asset{
