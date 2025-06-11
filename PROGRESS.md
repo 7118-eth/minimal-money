@@ -1,6 +1,6 @@
 # Minimal Money - Development Progress
 
-## Current State (2025-01-11)
+## Current State
 
 ### ✅ Fully Implemented
 - Complete portfolio tracking application with terminal UI
