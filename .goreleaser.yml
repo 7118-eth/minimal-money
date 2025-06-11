@@ -148,25 +148,49 @@ release:
 #     confinement: strict
 #     publish: true
 
-# Homebrew tap (commented out - requires separate repo)
-# brews:
-#   - repository:
-#       owner: 7118-eth
-#       name: homebrew-minimal-money
-#     folder: Formula
-#     homepage: https://github.com/7118-eth/minimal-money
-#     description: Beautiful terminal-based portfolio tracker
-#     test: |
-#       system "#{bin}/minimal-money", "--version"
+# Homebrew tap configuration
+# Uncomment and configure when tap repository is created
+brews:
+  - repository:
+      owner: 7118-eth
+      name: homebrew-minimal-money
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    folder: Formula
+    homepage: https://github.com/7118-eth/minimal-money
+    description: Beautiful terminal-based portfolio tracker that respects your time and privacy
+    license: MIT
+    test: |
+      system "#{bin}/minimal-money", "--version"
+    install: |
+      bin.install "minimal-money"
+    caveats: |
+      Minimal Money has been installed!
+      
+      To get started:
+        minimal-money
+      
+      For more information:
+        minimal-money --version
+        https://github.com/7118-eth/minimal-money
 
-# Docker images (commented out - for future use)
-# dockers:
-#   - image_templates:
-#       - "ghcr.io/7118-eth/minimal-money:{{ .Tag }}"
-#       - "ghcr.io/7118-eth/minimal-money:latest"
-#     dockerfile: Dockerfile
-#     build_flag_templates:
-#       - "--pull"
-#       - "--label=org.opencontainers.image.created={{.Date}}"
-#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-#       - "--label=org.opencontainers.image.version={{.Version}}"
+# Docker images
+dockers:
+  - image_templates:
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/minimal-money:{{ .Tag }}"
+      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/minimal-money:latest"
+    goos: linux
+    goarch: amd64
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+      - "--build-arg=VERSION={{.Version}}"
+      - "--build-arg=COMMIT={{.Commit}}"
+      - "--build-arg=DATE={{.Date}}"
+      - "--platform=linux/amd64,linux/arm64"

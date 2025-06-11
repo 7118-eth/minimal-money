@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  minimal-money:
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-unknown}
+        DATE: ${DATE:-unknown}
+    image: minimal-money:latest
+    container_name: minimal-money
+    tty: true
+    stdin_open: true
+    volumes:
+      - minimal-money-data:/home/minimal/data
+    environment:
+      - TERM=xterm-256color
+    restart: unless-stopped
+
+volumes:
+  minimal-money-data:
+    driver: local

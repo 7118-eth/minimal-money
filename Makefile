@@ -103,3 +103,37 @@ release-tag:
 	fi; \
 	git tag -a $(VERSION) -m "Release $(VERSION)"; \
 	echo "Created tag $(VERSION). Push with: git push origin $(VERSION)"
+
+# Docker commands
+docker-build:
+	@VERSION=$$(git describe --tags --always --dirty); \
+	COMMIT=$$(git rev-parse --short HEAD); \
+	DATE=$$(date -u '+%Y-%m-%d_%H:%M:%S'); \
+	docker build \
+		--build-arg VERSION=$$VERSION \
+		--build-arg COMMIT=$$COMMIT \
+		--build-arg DATE=$$DATE \
+		-t minimal-money:latest \
+		-t minimal-money:$$VERSION \
+		.
+
+docker-run:
+	docker run -it --rm minimal-money:latest
+
+docker-compose-up:
+	docker-compose up -d
+
+docker-compose-down:
+	docker-compose down
+
+# Install binary to system
+install: build
+	@echo "Installing minimal-money to /usr/local/bin..."
+	@sudo install -m 755 minimal-money /usr/local/bin/
+	@echo "Installation complete!"
+
+# Uninstall binary from system
+uninstall:
+	@echo "Removing minimal-money from /usr/local/bin..."
+	@sudo rm -f /usr/local/bin/minimal-money
+	@echo "Uninstall complete!"

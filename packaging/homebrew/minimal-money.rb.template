@@ -1,0 +1,47 @@
+# Template for Homebrew formula
+# This would go in a separate tap repository: homebrew-minimal-money
+# 
+# To use this template:
+# 1. Create repository: github.com/7118-eth/homebrew-minimal-money
+# 2. Copy this file to Formula/minimal-money.rb
+# 3. Replace VERSION and SHA256 placeholders
+# 4. Users can then: brew tap 7118-eth/minimal-money && brew install minimal-money
+
+class MinimalMoney < Formula
+  desc "Beautiful terminal-based portfolio tracker that respects your time and privacy"
+  homepage "https://github.com/7118-eth/minimal-money"
+  version "VERSION_PLACEHOLDER"
+  license "MIT"
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/7118-eth/minimal-money/releases/download/vVERSION_PLACEHOLDER/minimal-money_VERSION_PLACEHOLDER_darwin_arm64.tar.gz"
+      sha256 "SHA256_DARWIN_ARM64_PLACEHOLDER"
+    else
+      url "https://github.com/7118-eth/minimal-money/releases/download/vVERSION_PLACEHOLDER/minimal-money_VERSION_PLACEHOLDER_darwin_amd64.tar.gz"
+      sha256 "SHA256_DARWIN_AMD64_PLACEHOLDER"
+    end
+  end
+
+  on_linux do
+    if Hardware::CPU.arm?
+      url "https://github.com/7118-eth/minimal-money/releases/download/vVERSION_PLACEHOLDER/minimal-money_VERSION_PLACEHOLDER_linux_arm64.tar.gz"
+      sha256 "SHA256_LINUX_ARM64_PLACEHOLDER"
+    else
+      url "https://github.com/7118-eth/minimal-money/releases/download/vVERSION_PLACEHOLDER/minimal-money_VERSION_PLACEHOLDER_linux_amd64.tar.gz"
+      sha256 "SHA256_LINUX_AMD64_PLACEHOLDER"
+    end
+  end
+
+  def install
+    bin.install "minimal-money"
+  end
+
+  test do
+    # Test version output
+    assert_match "Minimal Money", shell_output("#{bin}/minimal-money --version")
+    
+    # Test that the binary runs (should exit cleanly when not in terminal)
+    system "#{bin}/minimal-money", "--version"
+  end
+end

@@ -1,0 +1,15 @@
+pkgbase = minimal-money
+	pkgdesc = Beautiful terminal-based portfolio tracker that respects your time and privacy
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/7118-eth/minimal-money
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	makedepends = go
+	makedepends = git
+	depends = glibc
+	source = minimal-money-1.0.0.tar.gz::https://github.com/7118-eth/minimal-money/archive/v1.0.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = minimal-money
