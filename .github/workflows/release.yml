@@ -47,7 +47,7 @@ jobs:
           
           ### Checksums
           
-          See checksums.txt in the release assets.
+          Each binary has its own .sha256 checksum file in the release assets.
         draft: false
         prerelease: false
 
@@ -141,29 +141,4 @@ jobs:
         upload_url: ${{ needs.release.outputs.upload_url }}
         asset_path: ./${{ env.ASSET_NAME }}.sha256
         asset_name: ${{ env.ASSET_NAME }}.sha256
-        asset_content_type: text/plain
-
-  create-checksums:
-    name: Create Combined Checksums
-    needs: [release, build-release]
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-    
-    - name: Create combined checksums
-      run: |
-        find . -name "*.sha256" -exec cat {} \; > checksums.txt
-    
-    - name: Upload checksums
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.release.outputs.upload_url }}
-        asset_path: ./checksums.txt
-        asset_name: checksums.txt
         asset_content_type: text/plain
