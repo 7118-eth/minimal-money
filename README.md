@@ -67,9 +67,18 @@ GBP                              2,100.00              $2,604.00
 
 ## 🚀 Quick Start
 
+### Download Binary (Fastest)
+```bash
+# macOS/Linux
+curl -L https://github.com/7118-eth/minimal-money/releases/latest/download/minimal-money_$(uname -s)_$(uname -m).tar.gz | tar xz
+chmod +x minimal-money
+./minimal-money
+```
+
+### Build from Source
 ```bash
 # Clone the repository
-git clone https://github.com/bioharz/minimal-money.git
+git clone https://github.com/7118-eth/minimal-money.git
 cd minimal-money
 
 # Build the application
@@ -78,6 +87,8 @@ make build
 # Run it!
 ./minimal-money
 ```
+
+See [INSTALL.md](INSTALL.md) for more installation options including package managers and Docker.
 
 ## ⌨️ Keyboard Shortcuts
 

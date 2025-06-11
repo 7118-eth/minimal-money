@@ -1,0 +1,53 @@
+name: minimal-money
+base: core22
+version: git
+summary: Beautiful terminal-based portfolio tracker
+description: |
+  Minimal Money is a beautiful terminal-based portfolio tracker that respects 
+  your time and privacy. Track your assets across multiple accounts with 
+  real-time price updates from CoinGecko and ExchangeRate-API.
+
+  Features:
+  - Asset-first tree view with multi-account support
+  - Real-time price updates (manual refresh)
+  - Complete audit trail for portfolio changes
+  - SQLite database for persistent storage
+  - Beautiful terminal UI with keyboard navigation
+  - No unnecessary features or bloat
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  minimal-money:
+    command: bin/minimal-money
+    plugs:
+      - home
+      - network
+      - removable-media
+
+parts:
+  minimal-money:
+    plugin: go
+    source: .
+    source-type: git
+    build-packages:
+      - gcc
+      - libc6-dev
+    stage-packages:
+      - ca-certificates
+    override-build: |
+      # Build with version information
+      VERSION=$(git describe --tags --always --dirty)
+      COMMIT=$(git rev-parse --short HEAD)
+      DATE=$(date -u '+%Y-%m-%d_%H:%M:%S')
+      
+      go build -o $SNAPCRAFT_PART_INSTALL/bin/minimal-money \
+        -ldflags="-s -w -X main.version=$VERSION -X main.commit=$COMMIT -X main.date=$DATE" \
+        ./cmd/budget
+    organize:
+      bin/minimal-money: bin/minimal-money

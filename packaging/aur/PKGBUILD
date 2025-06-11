@@ -1,0 +1,61 @@
+# Maintainer: Your Name <your.email@example.com>
+pkgname=minimal-money
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Beautiful terminal-based portfolio tracker that respects your time and privacy"
+arch=('x86_64' 'aarch64')
+url="https://github.com/7118-eth/minimal-money"
+license=('MIT')
+depends=('glibc')
+makedepends=('go' 'git')
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "${pkgname}-${pkgver}"
+  
+  # Create go module directory
+  mkdir -p build
+  export GOPATH="${srcdir}/go"
+  
+  # Download dependencies
+  go mod download
+}
+
+build() {
+  cd "${pkgname}-${pkgver}"
+  
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CXXFLAGS="${CXXFLAGS}"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export GOFLAGS="-buildmode=pie -trimpath -ldflags=-linkmode=external -mod=readonly -modcacherw"
+  
+  # Get version info
+  VERSION="${pkgver}"
+  COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+  DATE=$(date -u '+%Y-%m-%d_%H:%M:%S')
+  
+  go build -o ${pkgname} \
+    -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" \
+    ./cmd/budget
+}
+
+check() {
+  cd "${pkgname}-${pkgver}"
+  go test -short ./...
+}
+
+package() {
+  cd "${pkgname}-${pkgver}"
+  
+  # Install binary
+  install -Dm755 ${pkgname} "${pkgdir}/usr/bin/${pkgname}"
+  
+  # Install license
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  
+  # Install documentation
+  install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+  install -Dm644 PROJECT.md "${pkgdir}/usr/share/doc/${pkgname}/PROJECT.md"
+}
