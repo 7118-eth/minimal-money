@@ -79,15 +79,33 @@ func (c *PriceClient) GetCryptoPrices(symbols []string) (map[string]float64, err
 	}
 	defer resp.Body.Close()
 
-	var result map[string]map[string]float64
+	// Check for rate limit or error response
+	if resp.StatusCode != http.StatusOK {
+		// Return empty prices on API error (don't fail the whole operation)
+		return prices, nil
+	}
+
+	var result map[string]map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return prices, fmt.Errorf("failed to decode response: %w", err)
+		// Return empty prices on decode error (API might be down)
+		return prices, nil
 	}
 
 	// Map results back to symbols and update cache
 	for id, priceData := range result {
 		if symbol, ok := symbolMap[id]; ok {
-			if price, ok := priceData["usd"]; ok {
+			if usdData, ok := priceData["usd"]; ok {
+				// Handle both float64 and string responses
+				var price float64
+				switch v := usdData.(type) {
+				case float64:
+					price = v
+				case string:
+					// Skip if string (might be error message)
+					continue
+				default:
+					continue
+				}
 				prices[symbol] = price
 				c.cache[symbol] = cachedPrice{
 					price:     price,
