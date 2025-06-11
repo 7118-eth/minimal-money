@@ -149,29 +149,33 @@ release:
 #     publish: true
 
 # Homebrew tap configuration
-# Uncomment and configure when tap repository is created
-brews:
-  - repository:
-      owner: 7118-eth
-      name: homebrew-minimal-money
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    folder: Formula
-    homepage: https://github.com/7118-eth/minimal-money
-    description: Beautiful terminal-based portfolio tracker that respects your time and privacy
-    license: MIT
-    test: |
-      system "#{bin}/minimal-money", "--version"
-    install: |
-      bin.install "minimal-money"
-    caveats: |
-      Minimal Money has been installed!
-      
-      To get started:
-        minimal-money
-      
-      For more information:
-        minimal-money --version
-        https://github.com/7118-eth/minimal-money
+# To enable: 
+# 1. Run: ./scripts/setup-homebrew-tap.sh
+# 2. Add HOMEBREW_TAP_GITHUB_TOKEN to GitHub Secrets
+# 3. Uncomment the section below
+#
+# brews:
+#   - repository:
+#       owner: 7118-eth
+#       name: homebrew-minimal-money
+#       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+#     folder: Formula
+#     homepage: https://github.com/7118-eth/minimal-money
+#     description: Beautiful terminal-based portfolio tracker that respects your time and privacy
+#     license: MIT
+#     test: |
+#       system "#{bin}/minimal-money", "--version"
+#     install: |
+#       bin.install "minimal-money"
+#     caveats: |
+#       Minimal Money has been installed!
+#       
+#       To get started:
+#         minimal-money
+#       
+#       For more information:
+#         minimal-money --version
+#         https://github.com/7118-eth/minimal-money
 
 # Docker images
 dockers:
