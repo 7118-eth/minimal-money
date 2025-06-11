@@ -18,28 +18,45 @@ make test-fast
 make test-coverage
 
 # Format
-go fmt ./...
+make fmt
+
+# Lint
+make lint
+
+# Format and lint
+make check
 
 # Clean test databases
 make test-clean
+
+# Install git hooks
+make install-hooks
 ```
 
 ## Project Structure
 ```
 minimal-money/
-├── cmd/budget/         # Main entry point
-├── internal/           # Core logic
-│   ├── api/           # Price API clients
-│   ├── db/            # Database connection
-│   ├── models/        # Data models
-│   ├── repository/    # Data access layer
-│   ├── service/       # Business logic
-│   └── ui/            # Terminal UI
+├── .github/           # GitHub Actions workflows
+│   ├── workflows/     # CI/CD pipelines
+│   └── dependabot.yml # Dependency updates
+├── .githooks/         # Git hooks
+│   └── pre-commit     # Format and lint checks
+├── cmd/budget/        # Main entry point
+├── internal/          # Core logic
+│   ├── api/          # Price API clients
+│   ├── db/           # Database connection
+│   ├── models/       # Data models
+│   ├── repository/   # Data access layer
+│   ├── service/      # Business logic
+│   └── ui/           # Terminal UI
+├── scripts/           # Utility scripts
+│   └── install-hooks.sh # Hook installation
 ├── test/              # Test infrastructure
 │   ├── fixtures/      # Test data builders
 │   ├── helpers/       # Test utilities
 │   └── integration/   # E2E tests
 ├── data/              # SQLite database
+├── .golangci.yml      # Linter configuration
 ├── Makefile           # Build commands
 ├── PROJECT.md         # Technical design
 ├── PROGRESS.md        # Current state
