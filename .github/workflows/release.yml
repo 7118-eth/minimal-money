@@ -17,6 +17,55 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for changelog generation
+    
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        # Get the previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        # Generate changelog
+        echo "## What's Changed" > changelog.md
+        echo "" >> changelog.md
+        
+        if [ -z "$PREV_TAG" ]; then
+          echo "This is the first release!" >> changelog.md
+        else
+          # Group commits by type
+          echo "### Features" >> changelog.md
+          git log $PREV_TAG..HEAD --pretty=format:"* %s (%an)" --grep="^feat" >> changelog.md || true
+          echo "" >> changelog.md
+          
+          echo "### Bug Fixes" >> changelog.md
+          git log $PREV_TAG..HEAD --pretty=format:"* %s (%an)" --grep="^fix" >> changelog.md || true
+          echo "" >> changelog.md
+          
+          echo "### Other Changes" >> changelog.md
+          git log $PREV_TAG..HEAD --pretty=format:"* %s (%an)" --grep="^feat" --grep="^fix" --invert-grep >> changelog.md || true
+          echo "" >> changelog.md
+        fi
+        
+        echo "### Installation" >> changelog.md
+        echo "" >> changelog.md
+        echo "Download the appropriate binary for your platform below and make it executable:" >> changelog.md
+        echo "" >> changelog.md
+        echo '```bash' >> changelog.md
+        echo 'chmod +x minimal-money-*' >> changelog.md
+        echo './minimal-money-*' >> changelog.md
+        echo '```' >> changelog.md
+        echo "" >> changelog.md
+        echo "### Checksums" >> changelog.md
+        echo "" >> changelog.md
+        echo "Each binary has its own .sha256 checksum file in the release assets." >> changelog.md
+        
+        # Save changelog to environment
+        {
+          echo 'CHANGELOG<<EOF'
+          cat changelog.md
+          echo EOF
+        } >> $GITHUB_ENV
     
     - name: Create Release
       id: create_release
@@ -26,28 +75,7 @@ jobs:
       with:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
-        body: |
-          ## Changes in this Release
-          
-          ### Features
-          - Asset-first tree view with multi-account support
-          - Real-time price updates from CoinGecko and ExchangeRate-API
-          - Complete audit trail for all portfolio changes
-          - SQLite database for persistent storage
-          - Beautiful terminal UI with keyboard navigation
-          
-          ### Installation
-          
-          Download the appropriate binary for your platform below and make it executable:
-          
-          ```bash
-          chmod +x minimal-money-*
-          ./minimal-money-*
-          ```
-          
-          ### Checksums
-          
-          Each binary has its own .sha256 checksum file in the release assets.
+        body: ${{ env.CHANGELOG }}
         draft: false
         prerelease: false
 
@@ -74,6 +102,14 @@ jobs:
             goos: darwin
             goarch: arm64
             binary_name: minimal-money
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            binary_name: minimal-money.exe
+          - os: windows-latest
+            goos: windows
+            goarch: arm64
+            binary_name: minimal-money.exe
     
     steps:
     - uses: actions/checkout@v4
@@ -101,8 +137,20 @@ jobs:
           export CC=aarch64-linux-gnu-gcc
         fi
         
+        # Windows doesn't support CGO with SQLite easily, so we disable it
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          export CGO_ENABLED=0
+        fi
+        
         output_name="${{ matrix.binary_name }}-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
-        go build -o "${output_name}" -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" cmd/budget/main.go
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          output_name="${output_name%.exe}"  # Remove .exe for consistent naming
+        fi
+        # Get commit hash and date
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        BUILD_DATE=$(date -u '+%Y-%m-%d_%H:%M:%S')
+        
+        go build -o "${output_name}" -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }} -X main.commit=$COMMIT_HASH -X main.date=$BUILD_DATE" cmd/budget/main.go
         
         # Create archive
         if [ "${{ matrix.goos }}" = "windows" ]; then
