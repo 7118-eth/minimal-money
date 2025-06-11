@@ -142,7 +142,7 @@ func (b *HoldingBuilder) Create(t *testing.T, db *gorm.DB) *models.Holding {
 // Common test data sets
 func CreateSamplePortfolio(t *testing.T, db *gorm.DB) {
 	// Create accounts
-	hardware wallet := NewAccount().WithName("hardware wallet").WithType("wallet").Create(t, db)
+	hardwareWallet := NewAccount().WithName("hardware wallet").WithType("wallet").Create(t, db)
 	neobank := NewAccount().WithName("NeoBank").WithType("bank").Create(t, db)
 	
 	// Create assets
@@ -152,14 +152,14 @@ func CreateSamplePortfolio(t *testing.T, db *gorm.DB) {
 	
 	// Create holdings
 	NewHolding().
-		WithAccount(hardware wallet).
+		WithAccount(hardwareWallet).
 		WithAsset(btc).
 		WithAmount(0.5).
 		WithPurchasePrice(40000).
 		Create(t, db)
 		
 	NewHolding().
-		WithAccount(hardware wallet).
+		WithAccount(hardwareWallet).
 		WithAsset(eth).
 		WithAmount(10).
 		WithPurchasePrice(2000).

@@ -29,14 +29,14 @@ func TestCompletePortfolioWorkflow(t *testing.T) {
 	// Step 1: Create accounts
 	accountRepo := repository.NewAccountRepositoryWithDB(database)
 	
-	hardware wallet := &models.Account{
+	hardwareWallet := &models.Account{
 		Name:  "hardware wallet",
 		Type:  "wallet",
 		Color: "#FF5733",
 	}
-	err := accountRepo.Create(hardware wallet)
+	err := accountRepo.Create(hardwareWallet)
 	require.NoError(t, err)
-	t.Logf("Created account: %s (ID: %d)", hardware wallet.Name, hardware wallet.ID)
+	t.Logf("Created account: %s (ID: %d)", hardwareWallet.Name, hardwareWallet.ID)
 	
 	neobank := &models.Account{
 		Name:  "NeoBank",
@@ -79,14 +79,14 @@ func TestCompletePortfolioWorkflow(t *testing.T) {
 	
 	holdings := []models.Holding{
 		{
-			AccountID:     hardware wallet.ID,
+			AccountID:     hardwareWallet.ID,
 			AssetID:       btc.ID,
 			Amount:        0.5,
 			PurchasePrice: 40000,
 			PurchaseDate:  time.Now().AddDate(0, -6, 0),
 		},
 		{
-			AccountID:     hardware wallet.ID,
+			AccountID:     hardwareWallet.ID,
 			AssetID:       eth.ID,
 			Amount:        10,
 			PurchasePrice: 2000,
