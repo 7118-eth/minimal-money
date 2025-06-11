@@ -1,0 +1,172 @@
+version: 2
+
+project_name: minimal-money
+
+before:
+  hooks:
+    - go mod tidy
+    - go test -short ./...
+
+builds:
+  - id: minimal-money
+    main: ./cmd/budget
+    binary: minimal-money
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    # Override for specific platforms
+    overrides:
+      - goos: darwin
+        goarch: arm64
+        env:
+          - CGO_ENABLED=1
+      - goos: darwin
+        goarch: amd64
+        env:
+          - CGO_ENABLED=1
+      - goos: linux
+        goarch: amd64
+        env:
+          - CGO_ENABLED=1
+      - goos: linux
+        goarch: arm64
+        env:
+          - CGO_ENABLED=1
+          - CC=aarch64-linux-gnu-gcc
+
+  # Windows build without CGO
+  - id: minimal-money-windows
+    main: ./cmd/budget
+    binary: minimal-money
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    builds:
+      - minimal-money
+      - minimal-money-windows
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+  groups:
+    - title: 'Features'
+      regexp: '^feat'
+    - title: 'Bug Fixes'
+      regexp: '^fix'
+    - title: 'Performance'
+      regexp: '^perf'
+    - title: 'Refactor'
+      regexp: '^refactor'
+
+release:
+  github:
+    owner: 7118-eth
+    name: minimal-money
+  header: |
+    ## Minimal Money {{.Tag}}
+    
+    {{.Date}}
+  footer: |
+    ### Installation
+    
+    Download the appropriate binary for your platform and make it executable:
+    
+    ```bash
+    # macOS/Linux
+    tar -xzf minimal-money_*.tar.gz
+    chmod +x minimal-money
+    ./minimal-money --version
+    
+    # Windows
+    unzip minimal-money_*.zip
+    minimal-money.exe --version
+    ```
+    
+    ### Checksums
+    
+    All checksums are available in `checksums.txt`
+  name_template: "{{.ProjectName}} v{{.Version}}"
+  
+  # Uncomment to create draft releases
+  # draft: true
+  
+  # Uncomment to mark as prerelease
+  # prerelease: auto
+
+# Snapcraft integration (commented out - requires account)
+# snapcrafts:
+#   - name: minimal-money
+#     summary: Beautiful terminal-based portfolio tracker
+#     description: |
+#       A beautiful terminal-based portfolio tracker that respects
+#       your time and privacy.
+#     grade: stable
+#     confinement: strict
+#     publish: true
+
+# Homebrew tap (commented out - requires separate repo)
+# brews:
+#   - repository:
+#       owner: 7118-eth
+#       name: homebrew-minimal-money
+#     folder: Formula
+#     homepage: https://github.com/7118-eth/minimal-money
+#     description: Beautiful terminal-based portfolio tracker
+#     test: |
+#       system "#{bin}/minimal-money", "--version"
+
+# Docker images (commented out - for future use)
+# dockers:
+#   - image_templates:
+#       - "ghcr.io/7118-eth/minimal-money:{{ .Tag }}"
+#       - "ghcr.io/7118-eth/minimal-money:latest"
+#     dockerfile: Dockerfile
+#     build_flag_templates:
+#       - "--pull"
+#       - "--label=org.opencontainers.image.created={{.Date}}"
+#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+#       - "--label=org.opencontainers.image.version={{.Version}}"

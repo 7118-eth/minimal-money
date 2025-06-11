@@ -267,6 +267,43 @@ docker run --rm -it \
   nektos/act
 ```
 
+### Release Process
+
+We support two release workflows:
+
+#### Standard Release
+The original workflow with manual platform builds:
+- Triggers on version tags (v*.*.*)
+- Builds for Linux, macOS, and Windows
+- Generates dynamic changelog from commits
+- Creates individual checksum files
+
+#### GoReleaser (Recommended)
+Professional release automation:
+- Uses `.goreleaser.yml` configuration
+- Automatic changelog generation with commit grouping
+- Cross-platform builds with proper CGO handling
+- Single `checksums.txt` file for all binaries
+
+```bash
+# Test release locally
+make release-test
+
+# Create a release tag
+make release-tag VERSION=v1.1.0
+git push origin v1.1.0
+```
+
+#### Version Information
+All binaries include version information:
+```bash
+./minimal-money --version
+# Output:
+# Minimal Money v1.0.0
+# Commit: abc1234
+# Built: 2025-01-11_20:30:00
+```
+
 ## 🤝 Contributing
 
 Contributions are welcome! This project values:

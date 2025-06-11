@@ -5,7 +5,10 @@ all: build
 
 # Build the application
 build:
-	go build -o minimal-money cmd/budget/main.go
+	@VERSION=$$(git describe --tags --always --dirty 2>/dev/null || echo "dev"); \
+	COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo "none"); \
+	DATE=$$(date -u '+%Y-%m-%d_%H:%M:%S'); \
+	go build -o minimal-money -ldflags="-s -w -X main.version=$$VERSION -X main.commit=$$COMMIT -X main.date=$$DATE" cmd/budget/main.go
 
 # Run the application
 run:
@@ -82,3 +85,21 @@ deps:
 update-deps:
 	go get -u ./...
 	go mod tidy
+
+# Test release locally with GoReleaser
+release-test:
+	@if command -v goreleaser >/dev/null 2>&1; then \
+		goreleaser release --snapshot --clean --skip=publish; \
+	else \
+		echo "goreleaser not found. Install with: go install github.com/goreleaser/goreleaser@latest"; \
+		exit 1; \
+	fi
+
+# Create a new release tag
+release-tag:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Usage: make release-tag VERSION=v1.0.0"; \
+		exit 1; \
+	fi; \
+	git tag -a $(VERSION) -m "Release $(VERSION)"; \
+	echo "Created tag $(VERSION). Push with: git push origin $(VERSION)"
