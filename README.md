@@ -8,6 +8,8 @@
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go" alt="Go Version">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat" alt="License">
   <img src="https://img.shields.io/badge/Platform-macOS%20|%20Linux-blue?style=flat" alt="Platform">
+  <img src="https://github.com/7118-eth/minimal-money/workflows/CI/badge.svg" alt="CI Status">
+  <img src="https://github.com/7118-eth/minimal-money/workflows/golangci-lint/badge.svg" alt="Lint Status">
 </p>
 
 ## ✨ Features
@@ -120,6 +122,32 @@ Built with modern Go practices:
 
 See [TEST_ARCHITECTURE.md](TEST_ARCHITECTURE.md) for our pragmatic testing approach.
 
+## 🔄 CI/CD
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+### Workflows
+
+- **CI** - Runs on every push and PR
+  - Linting and formatting checks
+  - Tests on multiple Go versions (1.21, 1.22, 1.23)
+  - Cross-platform testing (Linux, macOS)
+  - Security scanning with govulncheck
+  - Code coverage reporting
+  - Binary builds for all platforms
+
+- **Release** - Automated releases on version tags
+  - Builds binaries for Linux and macOS (amd64, arm64)
+  - Creates GitHub releases with checksums
+  - Automated changelog in release notes
+
+- **Code Quality** - golangci-lint for comprehensive checks
+
+### Status Badges
+
+![CI](https://github.com/7118-eth/minimal-money/workflows/CI/badge.svg)
+![golangci-lint](https://github.com/7118-eth/minimal-money/workflows/golangci-lint/badge.svg)
+
 ## 🤝 Contributing
 
 Contributions are welcome! This project values:
@@ -127,6 +155,8 @@ Contributions are welcome! This project values:
 - Pragmatic solutions
 - Real-world testing
 - User experience
+
+All PRs must pass CI checks before merging.
 
 ## 📄 License
 

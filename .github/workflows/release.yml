@@ -1,0 +1,166 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## Changes in this Release
+          
+          ### Features
+          - Asset-first tree view with multi-account support
+          - Real-time price updates from CoinGecko and ExchangeRate-API
+          - Complete audit trail for all portfolio changes
+          - SQLite database for persistent storage
+          - Beautiful terminal UI with keyboard navigation
+          
+          ### Installation
+          
+          Download the appropriate binary for your platform below and make it executable:
+          
+          ```bash
+          chmod +x minimal-money-*
+          ./minimal-money-*
+          ```
+          
+          ### Checksums
+          
+          See checksums.txt in the release assets.
+        draft: false
+        prerelease: false
+
+  build-release:
+    name: Build Release Binary
+    needs: release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            binary_name: minimal-money
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            binary_name: minimal-money
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            binary_name: minimal-money
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            binary_name: minimal-money
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache: true
+    
+    - name: Get version
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 1
+      run: |
+        # For cross-compilation of CGO, we need to handle it differently
+        if [ "${{ matrix.goos }}" = "linux" ] && [ "${{ matrix.goarch }}" = "arm64" ] && [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          export CC=aarch64-linux-gnu-gcc
+        fi
+        
+        output_name="${{ matrix.binary_name }}-${{ steps.get_version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+        go build -o "${output_name}" -ldflags="-s -w -X main.version=${{ steps.get_version.outputs.VERSION }}" cmd/budget/main.go
+        
+        # Create archive
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          zip "${output_name}.zip" "${output_name}"
+          echo "ASSET_NAME=${output_name}.zip" >> $GITHUB_ENV
+        else
+          tar czf "${output_name}.tar.gz" "${output_name}"
+          echo "ASSET_NAME=${output_name}.tar.gz" >> $GITHUB_ENV
+        fi
+        
+        # Calculate checksum
+        if [ "${{ matrix.goos }}" = "darwin" ]; then
+          shasum -a 256 "${ASSET_NAME}" > "${ASSET_NAME}.sha256"
+        else
+          sha256sum "${ASSET_NAME}" > "${ASSET_NAME}.sha256"
+        fi
+    
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./${{ env.ASSET_NAME }}
+        asset_name: ${{ env.ASSET_NAME }}
+        asset_content_type: application/octet-stream
+    
+    - name: Upload Checksum
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./${{ env.ASSET_NAME }}.sha256
+        asset_name: ${{ env.ASSET_NAME }}.sha256
+        asset_content_type: text/plain
+
+  create-checksums:
+    name: Create Combined Checksums
+    needs: [release, build-release]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Create combined checksums
+      run: |
+        find . -name "*.sha256" -exec cat {} \; > checksums.txt
+    
+    - name: Upload checksums
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./checksums.txt
+        asset_name: checksums.txt
+        asset_content_type: text/plain

@@ -1,0 +1,58 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - gofmt
+    - goimports
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - typecheck
+    - gosec
+    - unconvert
+    - misspell
+    - prealloc
+    - nakedret
+    - exportloopref
+    - bodyclose
+    - rowserrcheck
+    - errorlint
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: github.com/bioharz/budget
+  govet:
+    check-shadowing: true
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  gosec:
+    excludes:
+      - G404 # Insecure random number source (we use it for non-crypto purposes)
+  nakedret:
+    max-func-lines: 30
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+    
+    # Exclude some specific messages
+    - text: "Error return value of .((Close|Write|Flush)|(.*\\.Set)|(.*\\.Add)) is not checked"
+      linters:
+        - errcheck
+    
+    # Allow TODO comments
+    - text: "TODO"
+      linters:
+        - godox
