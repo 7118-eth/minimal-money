@@ -29,25 +29,25 @@ func NewPriceClient() *PriceClient {
 
 // CoinGecko ID mapping for common crypto symbols
 var cryptoIDMapping = map[string]string{
-	"BTC": "bitcoin",
-	"ETH": "ethereum",
-	"USDT": "tether",
-	"USDC": "usd-coin",
-	"BNB": "binancecoin",
-	"XRP": "ripple",
-	"SOL": "solana",
-	"ADA": "cardano",
-	"DOGE": "dogecoin",
-	"DOT": "polkadot",
+	"BTC":   "bitcoin",
+	"ETH":   "ethereum",
+	"USDT":  "tether",
+	"USDC":  "usd-coin",
+	"BNB":   "binancecoin",
+	"XRP":   "ripple",
+	"SOL":   "solana",
+	"ADA":   "cardano",
+	"DOGE":  "dogecoin",
+	"DOT":   "polkadot",
 	"MATIC": "matic-network",
-	"AVAX": "avalanche-2",
+	"AVAX":  "avalanche-2",
 }
 
 func (c *PriceClient) GetCryptoPrices(symbols []string) (map[string]float64, error) {
 	prices := make(map[string]float64)
 	var idsToFetch []string
 	var symbolMap = make(map[string]string) // maps coingecko ID to original symbol
-	
+
 	// Check cache first
 	for _, symbol := range symbols {
 		symbol = strings.ToUpper(symbol)
@@ -57,22 +57,22 @@ func (c *PriceClient) GetCryptoPrices(symbols []string) (map[string]float64, err
 				continue
 			}
 		}
-		
+
 		// Get CoinGecko ID
 		if id, ok := cryptoIDMapping[symbol]; ok {
 			idsToFetch = append(idsToFetch, id)
 			symbolMap[id] = symbol
 		}
 	}
-	
+
 	if len(idsToFetch) == 0 {
 		return prices, nil
 	}
-	
+
 	// Batch fetch from CoinGecko
 	ids := strings.Join(idsToFetch, ",")
 	url := fmt.Sprintf("https://api.coingecko.com/api/v3/simple/price?ids=%s&vs_currencies=usd", ids)
-	
+
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return prices, fmt.Errorf("failed to fetch prices: %w", err)
@@ -102,7 +102,7 @@ func (c *PriceClient) GetCryptoPrices(symbols []string) (map[string]float64, err
 
 func (c *PriceClient) GetFiatRates(symbols []string) (map[string]float64, error) {
 	rates := make(map[string]float64)
-	
+
 	// Handle fixed rate currencies
 	for _, symbol := range symbols {
 		upperSymbol := strings.ToUpper(symbol)
@@ -120,7 +120,7 @@ func (c *PriceClient) GetFiatRates(symbols []string) (map[string]float64, error)
 			continue
 		}
 	}
-	
+
 	// Check if we need to fetch any rates
 	var needsFetch bool
 	for _, symbol := range symbols {
@@ -137,14 +137,14 @@ func (c *PriceClient) GetFiatRates(symbols []string) (map[string]float64, error)
 			}
 		}
 	}
-	
+
 	if !needsFetch {
 		return rates, nil
 	}
-	
+
 	// Fetch from ExchangeRate-API
 	url := "https://api.exchangerate-api.com/v4/latest/USD"
-	
+
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return rates, fmt.Errorf("failed to fetch exchange rates: %w", err)

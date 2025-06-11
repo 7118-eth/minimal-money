@@ -144,12 +144,12 @@ func CreateSamplePortfolio(t *testing.T, db *gorm.DB) {
 	// Create accounts
 	hardwareWallet := NewAccount().WithName("hardware wallet").WithType("wallet").Create(t, db)
 	neobank := NewAccount().WithName("NeoBank").WithType("bank").Create(t, db)
-	
+
 	// Create assets
 	btc := NewAsset().WithSymbol("BTC").WithName("Bitcoin").Create(t, db)
 	eth := NewAsset().WithSymbol("ETH").WithName("Ethereum").Create(t, db)
 	usd := NewAsset().WithSymbol("USD").WithName("US Dollar").WithType(models.AssetTypeFiat).Create(t, db)
-	
+
 	// Create holdings
 	NewHolding().
 		WithAccount(hardwareWallet).
@@ -157,14 +157,14 @@ func CreateSamplePortfolio(t *testing.T, db *gorm.DB) {
 		WithAmount(0.5).
 		WithPurchasePrice(40000).
 		Create(t, db)
-		
+
 	NewHolding().
 		WithAccount(hardwareWallet).
 		WithAsset(eth).
 		WithAmount(10).
 		WithPurchasePrice(2000).
 		Create(t, db)
-		
+
 	NewHolding().
 		WithAccount(neobank).
 		WithAsset(usd).

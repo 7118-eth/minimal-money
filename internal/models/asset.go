@@ -1,8 +1,8 @@
 package models
 
 import (
-	"time"
 	"gorm.io/gorm"
+	"time"
 )
 
 type AssetType string
@@ -15,9 +15,9 @@ const (
 )
 
 type Account struct {
-	ID        uint           `gorm:"primaryKey"`
-	Name      string         `gorm:"not null"`
-	Type      string         `gorm:"not null"`
+	ID        uint   `gorm:"primaryKey"`
+	Name      string `gorm:"not null"`
+	Type      string `gorm:"not null"`
 	Color     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -25,22 +25,22 @@ type Account struct {
 }
 
 type Asset struct {
-	ID        uint           `gorm:"primaryKey"`
-	Symbol    string         `gorm:"uniqueIndex;not null"`
-	Name      string         `gorm:"not null"`
-	Type      AssetType      `gorm:"not null"`
+	ID        uint      `gorm:"primaryKey"`
+	Symbol    string    `gorm:"uniqueIndex;not null"`
+	Name      string    `gorm:"not null"`
+	Type      AssetType `gorm:"not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 type Holding struct {
-	ID            uint           `gorm:"primaryKey"`
-	AccountID     uint           `gorm:"not null"`
-	Account       Account        `gorm:"foreignKey:AccountID"`
-	AssetID       uint           `gorm:"not null"`
-	Asset         Asset          `gorm:"foreignKey:AssetID"`
-	Amount        float64        `gorm:"not null"`
+	ID            uint    `gorm:"primaryKey"`
+	AccountID     uint    `gorm:"not null"`
+	Account       Account `gorm:"foreignKey:AccountID"`
+	AssetID       uint    `gorm:"not null"`
+	Asset         Asset   `gorm:"foreignKey:AssetID"`
+	Amount        float64 `gorm:"not null"`
 	PurchasePrice float64
 	PurchaseDate  time.Time
 	CreatedAt     time.Time
@@ -72,20 +72,20 @@ type AuditLog struct {
 	OldValue   string             `gorm:"type:text"` // JSON representation
 	NewValue   string             `gorm:"type:text"` // JSON representation
 	UserNote   string
-	CreatedAt  time.Time          `gorm:"not null;index"`
+	CreatedAt  time.Time `gorm:"not null;index"`
 }
 
 type PortfolioSnapshot struct {
-	ID           uint                   `gorm:"primaryKey"`
-	TotalValueUSD float64               `gorm:"not null"`
-	Details      map[string]interface{} `gorm:"serializer:json"`
-	Timestamp    time.Time              `gorm:"not null;index"`
+	ID            uint                   `gorm:"primaryKey"`
+	TotalValueUSD float64                `gorm:"not null"`
+	Details       map[string]interface{} `gorm:"serializer:json"`
+	Timestamp     time.Time              `gorm:"not null;index"`
 }
 
 type PriceCache struct {
-	ID         uint      `gorm:"primaryKey"`
-	AssetID    uint      `gorm:"uniqueIndex;not null"`
-	Asset      Asset     `gorm:"foreignKey:AssetID"`
-	PriceUSD   float64   `gorm:"not null"`
-	UpdatedAt  time.Time `gorm:"not null;index"`
+	ID        uint      `gorm:"primaryKey"`
+	AssetID   uint      `gorm:"uniqueIndex;not null"`
+	Asset     Asset     `gorm:"foreignKey:AssetID"`
+	PriceUSD  float64   `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"not null;index"`
 }

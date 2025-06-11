@@ -104,7 +104,7 @@ func TestPriceCacheRepository_GetLastUpdateTime(t *testing.T) {
 	require.NoError(t, err)
 
 	time.Sleep(100 * time.Millisecond)
-	
+
 	err = repo.Upsert(eth.ID, 3000.0)
 	require.NoError(t, err)
 
@@ -112,7 +112,7 @@ func TestPriceCacheRepository_GetLastUpdateTime(t *testing.T) {
 	lastUpdate, err = repo.GetLastUpdateTime()
 	require.NoError(t, err)
 	require.NotNil(t, lastUpdate)
-	
+
 	// Should be close to now (ETH was updated last)
 	assert.WithinDuration(t, time.Now(), *lastUpdate, 2*time.Second)
 }

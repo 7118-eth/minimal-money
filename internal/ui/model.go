@@ -23,21 +23,20 @@ const (
 )
 
 type Model struct {
-	view         View
-	accounts     []models.Account
-	assets       []models.Asset
-	holdings     []models.Holding
-	prices       map[uint]float64
-	table        table.Model
-	cursor       int
-	width        int
-	height       int
-	err          error
-	inputBuffer  string
-	inputMode    bool
-	modalState   ModalState
-	priceService *service.PriceService
-	auditService *service.AuditService
+	view              View
+	accounts          []models.Account
+	assets            []models.Asset
+	holdings          []models.Holding
+	prices            map[uint]float64
+	table             table.Model
+	width             int
+	height            int
+	err               error
+	inputBuffer       string
+	inputMode         bool
+	modalState        ModalState
+	priceService      *service.PriceService
+	auditService      *service.AuditService
 	deletingHoldingID uint
 	lastPriceUpdate   *time.Time
 }
@@ -81,7 +80,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if m.inputMode {
@@ -114,7 +113,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		
+
 		// Handle delete confirmation view
 		if m.view == ViewDeleteConfirm {
 			switch msg.String() {
@@ -126,7 +125,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		
+
 		// Main table view keyboard handling
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -164,7 +163,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.table.SetHeight(msg.Height - 8)
 			m.updateTableData()
 		}
-		
+
 	case priceUpdateMsg:
 		if msg.err == nil && msg.prices != nil {
 			m.prices = msg.prices
@@ -173,12 +172,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.lastPriceUpdate = lastUpdate
 			m.updateTableData()
 		}
-		
+
 	case dataLoadedMsg:
 		m.accounts = msg.accounts
 		m.assets = msg.assets
 		m.holdings = msg.holdings
-		
+
 		// Load cached prices first, before updating table
 		if m.priceService != nil && len(m.assets) > 0 {
 			cachedPrices, _ := m.priceService.GetCachedPrices()
@@ -188,7 +187,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.lastPriceUpdate = lastUpdate
 			}
 		}
-		
+
 		// Now update table with prices available
 		m.updateTableData()
 	}
@@ -230,7 +229,7 @@ func (m Model) addAssetView() string {
 
 func (m Model) historyView() string {
 	content := "📜 Audit Trail (Last 50 changes)\n\n"
-	
+
 	// Get audit logs
 	logs, err := m.auditService.GetAllLogs(50)
 	if err != nil {
@@ -238,14 +237,14 @@ func (m Model) historyView() string {
 		content += "Press ESC to go back"
 		return content
 	}
-	
+
 	if len(logs) == 0 {
 		content += "No audit history available yet.\n"
 		content += "Changes to your portfolio will be tracked here.\n\n"
 		content += "Press ESC to go back"
 		return content
 	}
-	
+
 	// Display audit logs
 	for _, log := range logs {
 		// Format action with emoji
@@ -258,20 +257,20 @@ func (m Model) historyView() string {
 		case models.AuditActionDelete:
 			actionIcon = "🗑️"
 		}
-		
-		content += fmt.Sprintf("%s %s - %s\n", 
+
+		content += fmt.Sprintf("%s %s - %s\n",
 			log.CreatedAt.Format("2006-01-02 15:04"),
 			actionIcon,
 			log.Action)
-		
+
 		// Parse and display the changes
 		if log.EntityType == models.AuditEntityHolding {
 			content += m.formatHoldingChange(log)
 		}
-		
+
 		content += "───────────────────────────────────\n"
 	}
-	
+
 	content += "\nPress ESC to go back"
 	return content
 }
@@ -285,11 +284,11 @@ func (m Model) deleteConfirmView() string {
 			break
 		}
 	}
-	
+
 	account := m.getAccountByID(holding.AccountID)
 	asset := m.getAssetByID(holding.AssetID)
 	value := holding.Amount * m.prices[holding.AssetID]
-	
+
 	content := m.tableView() + "\n\n"
 	content += "┌─────────────────────────────────────────────┐\n"
 	content += "│          Confirm Delete                     │\n"
@@ -303,7 +302,7 @@ func (m Model) deleteConfirmView() string {
 	content += "│                                             │\n"
 	content += "│        [Y]es     [N]o / [ESC]              │\n"
 	content += "└─────────────────────────────────────────────┘"
-	
+
 	return content
 }
 
@@ -331,7 +330,7 @@ func (m *Model) loadData() {
 
 	// Update table with new data
 	m.updateTableData()
-	
+
 	// Fetch initial prices
 	if len(m.assets) > 0 {
 		prices, err := m.priceService.FetchPrices(m.assets)
@@ -347,12 +346,12 @@ func (m Model) refreshPrices() tea.Cmd {
 		if m.priceService == nil || len(m.assets) == 0 {
 			return nil
 		}
-		
+
 		prices, err := m.priceService.FetchPrices(m.assets)
 		if err != nil {
 			return priceUpdateMsg{err: err}
 		}
-		
+
 		return priceUpdateMsg{prices: prices}
 	}
 }
@@ -422,7 +421,7 @@ func (m *Model) confirmDelete() {
 
 	// Log the deletion to audit trail
 	if m.auditService != nil && holdingToDelete.ID != 0 {
-		m.auditService.LogHoldingDelete(&holdingToDelete)
+		_ = m.auditService.LogHoldingDelete(&holdingToDelete)
 	}
 
 	// Reload data and return to main view

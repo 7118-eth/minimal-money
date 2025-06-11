@@ -10,7 +10,7 @@ import (
 
 func (m Model) formatHoldingChange(log models.AuditLog) string {
 	var result strings.Builder
-	
+
 	switch log.Action {
 	case models.AuditActionCreate:
 		// Parse new value
@@ -19,16 +19,16 @@ func (m Model) formatHoldingChange(log models.AuditLog) string {
 			accountID := uint(data["account_id"].(float64))
 			assetID := uint(data["asset_id"].(float64))
 			amount := data["amount"].(float64)
-			
+
 			account := m.getAccountByID(accountID)
 			asset := m.getAssetByID(assetID)
-			
+
 			result.WriteString(fmt.Sprintf("  Added %.4f %s to %s\n", amount, asset.Symbol, account.Name))
 			if purchasePrice, ok := data["purchase_price"].(float64); ok && purchasePrice > 0 {
 				result.WriteString(fmt.Sprintf("  Purchase price: $%.2f\n", purchasePrice))
 			}
 		}
-		
+
 	case models.AuditActionUpdate:
 		// Parse old and new values
 		var oldData, newData map[string]interface{}
@@ -39,16 +39,16 @@ func (m Model) formatHoldingChange(log models.AuditLog) string {
 				assetID := uint(newData["asset_id"].(float64))
 				account := m.getAccountByID(accountID)
 				asset := m.getAssetByID(assetID)
-				
+
 				result.WriteString(fmt.Sprintf("  Updated %s in %s:\n", asset.Symbol, account.Name))
-				
+
 				// Check what changed
 				oldAmount := oldData["amount"].(float64)
 				newAmount := newData["amount"].(float64)
 				if oldAmount != newAmount {
 					result.WriteString(fmt.Sprintf("  Amount: %.4f → %.4f\n", oldAmount, newAmount))
 				}
-				
+
 				// Check if account changed
 				oldAccountID := uint(oldData["account_id"].(float64))
 				if oldAccountID != accountID {
@@ -57,7 +57,7 @@ func (m Model) formatHoldingChange(log models.AuditLog) string {
 				}
 			}
 		}
-		
+
 	case models.AuditActionDelete:
 		// Parse old value
 		var data map[string]interface{}
@@ -65,13 +65,13 @@ func (m Model) formatHoldingChange(log models.AuditLog) string {
 			accountID := uint(data["account_id"].(float64))
 			assetID := uint(data["asset_id"].(float64))
 			amount := data["amount"].(float64)
-			
+
 			account := m.getAccountByID(accountID)
 			asset := m.getAssetByID(assetID)
-			
+
 			result.WriteString(fmt.Sprintf("  Removed %.4f %s from %s\n", amount, asset.Symbol, account.Name))
 		}
 	}
-	
+
 	return result.String()
 }

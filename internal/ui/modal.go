@@ -20,48 +20,48 @@ type InputField struct {
 }
 
 type ModalState struct {
-	Fields        []InputField
-	ActiveField   int
-	ShowError     bool
-	ErrorMessage  string
-	IsEdit        bool
+	Fields           []InputField
+	ActiveField      int
+	ShowError        bool
+	ErrorMessage     string
+	IsEdit           bool
 	EditingHoldingID uint
 }
 
 var (
 	modalStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		Padding(1, 2).
-		Width(50)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(1, 2).
+			Width(50)
 
 	titleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("229")).
-		MarginBottom(1)
+			Bold(true).
+			Foreground(lipgloss.Color("229")).
+			MarginBottom(1)
 
 	labelStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
+			Foreground(lipgloss.Color("241"))
 
 	inputStyle = lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("238")).
-		Padding(0, 1).
-		Width(30)
+			Border(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("238")).
+			Padding(0, 1).
+			Width(30)
 
-	activeInputStyle = inputStyle.Copy().
-		BorderForeground(lipgloss.Color("62"))
+	activeInputStyle = inputStyle.
+				BorderForeground(lipgloss.Color("62"))
 
 	errorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("196"))
+			Foreground(lipgloss.Color("196"))
 
 	buttonStyle = lipgloss.NewStyle().
-		Padding(0, 2).
-		Background(lipgloss.Color("238")).
-		Foreground(lipgloss.Color("255"))
+			Padding(0, 2).
+			Background(lipgloss.Color("238")).
+			Foreground(lipgloss.Color("255"))
 
-	activeButtonStyle = buttonStyle.Copy().
-		Background(lipgloss.Color("62"))
+	activeButtonStyle = buttonStyle.
+				Background(lipgloss.Color("62"))
 )
 
 func (m *Model) initAddAssetModal() {
@@ -73,7 +73,7 @@ func (m *Model) initAddAssetModal() {
 			{Label: "Purchase Price", Value: "", Placeholder: "e.g., 40000 (optional)"},
 		},
 		ActiveField: 0,
-		IsEdit: false,
+		IsEdit:      false,
 	}
 }
 
@@ -82,7 +82,7 @@ func (m *Model) initEditAssetModal(holding models.Holding, account models.Accoun
 	if holding.PurchasePrice > 0 {
 		purchasePrice = fmt.Sprintf("%.2f", holding.PurchasePrice)
 	}
-	
+
 	m.modalState = ModalState{
 		Fields: []InputField{
 			{Label: "Account", Value: account.Name, Placeholder: "e.g., hardware wallet, NeoBank"},
@@ -90,8 +90,8 @@ func (m *Model) initEditAssetModal(holding models.Holding, account models.Accoun
 			{Label: "Amount", Value: fmt.Sprintf("%.6f", holding.Amount), Placeholder: "e.g., 0.5"},
 			{Label: "Purchase Price", Value: purchasePrice, Placeholder: "e.g., 40000 (optional)"},
 		},
-		ActiveField: 0,
-		IsEdit: true,
+		ActiveField:      0,
+		IsEdit:           true,
 		EditingHoldingID: holding.ID,
 	}
 }
@@ -108,7 +108,7 @@ func (m *Model) handleModalInput(key string) {
 	case "enter":
 		if m.modalState.ActiveField == len(m.modalState.Fields) { // Save button
 			m.saveAsset()
-		} else if m.modalState.ActiveField == len(m.modalState.Fields) + 1 { // Cancel button
+		} else if m.modalState.ActiveField == len(m.modalState.Fields)+1 { // Cancel button
 			m.view = ViewMain
 			m.inputMode = false
 			m.inputBuffer = ""
@@ -200,7 +200,7 @@ func (m *Model) saveAsset() {
 	}
 
 	holdingRepo := repository.NewHoldingRepository()
-	
+
 	if m.modalState.IsEdit {
 		// Get old holding for audit log
 		var oldHolding models.Holding
@@ -229,7 +229,7 @@ func (m *Model) saveAsset() {
 		// Log the update to audit trail
 		if m.auditService != nil && oldHolding.ID != 0 {
 			holding.PurchaseDate = oldHolding.PurchaseDate // Preserve purchase date for audit
-			m.auditService.LogHoldingUpdate(&oldHolding, &holding)
+			_ = m.auditService.LogHoldingUpdate(&oldHolding, &holding)
 		}
 	} else {
 		// Create new holding
@@ -248,7 +248,7 @@ func (m *Model) saveAsset() {
 
 		// Log the creation to audit trail
 		if m.auditService != nil {
-			m.auditService.LogHoldingCreate(&holding)
+			_ = m.auditService.LogHoldingCreate(&holding)
 		}
 	}
 
@@ -271,18 +271,18 @@ func (m *Model) renderAddAssetModal() string {
 	// Render input fields
 	for i, field := range m.modalState.Fields {
 		label := labelStyle.Render(field.Label + ":")
-		
+
 		value := field.Value
 		if value == "" && m.modalState.ActiveField != i {
 			value = field.Placeholder
 		}
-		
+
 		style := inputStyle
 		if m.modalState.ActiveField == i {
 			style = activeInputStyle
 			value += "█"
 		}
-		
+
 		input := style.Render(value)
 		b.WriteString(fmt.Sprintf("%-15s %s\n\n", label, input))
 	}
@@ -295,17 +295,17 @@ func (m *Model) renderAddAssetModal() string {
 	// Buttons
 	saveStyle := buttonStyle
 	cancelStyle := buttonStyle
-	
+
 	if m.modalState.ActiveField == len(m.modalState.Fields) {
 		saveStyle = activeButtonStyle
-	} else if m.modalState.ActiveField == len(m.modalState.Fields) + 1 {
+	} else if m.modalState.ActiveField == len(m.modalState.Fields)+1 {
 		cancelStyle = activeButtonStyle
 	}
-	
-	buttons := fmt.Sprintf("%s  %s", 
+
+	buttons := fmt.Sprintf("%s  %s",
 		saveStyle.Render("Save"),
 		cancelStyle.Render("Cancel"))
-	
+
 	b.WriteString(strings.Repeat(" ", 15) + buttons)
 
 	return modalStyle.Render(b.String())
@@ -313,7 +313,7 @@ func (m *Model) renderAddAssetModal() string {
 
 func (m *Model) guessAssetType(symbol string) models.AssetType {
 	symbol = strings.ToUpper(symbol)
-	
+
 	// Common fiat currencies
 	fiatSymbols := []string{"USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "AED"}
 	for _, fiat := range fiatSymbols {
@@ -321,7 +321,7 @@ func (m *Model) guessAssetType(symbol string) models.AssetType {
 			return models.AssetTypeFiat
 		}
 	}
-	
+
 	// Common crypto currencies
 	cryptoSymbols := []string{"BTC", "ETH", "USDT", "USDC", "BNB", "XRP", "SOL", "ADA"}
 	for _, crypto := range cryptoSymbols {
@@ -329,7 +329,7 @@ func (m *Model) guessAssetType(symbol string) models.AssetType {
 			return models.AssetTypeCrypto
 		}
 	}
-	
+
 	// Default to crypto for unknown symbols
 	return models.AssetTypeCrypto
 }

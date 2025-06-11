@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type HoldingRepository struct{
+type HoldingRepository struct {
 	db *gorm.DB
 }
 

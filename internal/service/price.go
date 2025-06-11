@@ -10,36 +10,36 @@ import (
 )
 
 type PriceService struct {
-	client     *api.PriceClient
-	assetRepo  *repository.AssetRepository
-	cacheRepo  *repository.PriceCacheRepository
+	client    *api.PriceClient
+	assetRepo *repository.AssetRepository
+	cacheRepo *repository.PriceCacheRepository
 }
 
 func NewPriceService() *PriceService {
 	return &PriceService{
-		client:     api.NewPriceClient(),
-		assetRepo:  repository.NewAssetRepository(),
-		cacheRepo:  repository.NewPriceCacheRepository(),
+		client:    api.NewPriceClient(),
+		assetRepo: repository.NewAssetRepository(),
+		cacheRepo: repository.NewPriceCacheRepository(),
 	}
 }
 
 func NewPriceServiceWithDB(database *gorm.DB) *PriceService {
 	return &PriceService{
-		client:     api.NewPriceClient(),
-		assetRepo:  repository.NewAssetRepositoryWithDB(database),
-		cacheRepo:  repository.NewPriceCacheRepositoryWithDB(database),
+		client:    api.NewPriceClient(),
+		assetRepo: repository.NewAssetRepositoryWithDB(database),
+		cacheRepo: repository.NewPriceCacheRepositoryWithDB(database),
 	}
 }
 
 func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, error) {
 	prices := make(map[uint]float64)
-	
+
 	// Separate crypto and fiat assets
 	var cryptoSymbols []string
 	var fiatSymbols []string
 	cryptoAssetMap := make(map[string]uint)
 	fiatAssetMap := make(map[string]uint)
-	
+
 	for _, asset := range assets {
 		switch asset.Type {
 		case models.AssetTypeCrypto:
@@ -53,7 +53,7 @@ func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, err
 			prices[asset.ID] = 0
 		}
 	}
-	
+
 	// Fetch crypto prices
 	if len(cryptoSymbols) > 0 {
 		cryptoPrices, err := s.client.GetCryptoPrices(cryptoSymbols)
@@ -67,7 +67,7 @@ func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, err
 			}
 		}
 	}
-	
+
 	// Fetch fiat rates
 	if len(fiatSymbols) > 0 {
 		fiatRates, err := s.client.GetFiatRates(fiatSymbols)
@@ -81,14 +81,16 @@ func (s *PriceService) FetchPrices(assets []models.Asset) (map[uint]float64, err
 			}
 		}
 	}
-	
+
 	// Save prices to cache
 	if s.cacheRepo != nil {
 		if err := s.cacheRepo.UpsertBatch(prices); err != nil {
 			// Log error but don't fail the operation
+			_ = err
+			// Log error but don't fail the operation
 		}
 	}
-	
+
 	return prices, nil
 }
 
@@ -107,4 +109,3 @@ func (s *PriceService) GetLastUpdateTime() (*time.Time, error) {
 	}
 	return s.cacheRepo.GetLastUpdateTime()
 }
-

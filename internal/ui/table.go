@@ -27,10 +27,6 @@ var (
 	totalStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("229"))
-	
-	assetRowStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("214"))
 )
 
 func (m *Model) setupTable() {
@@ -39,12 +35,12 @@ func (m *Model) setupTable() {
 	if availableWidth < 80 {
 		availableWidth = 80 // Minimum width
 	}
-	
+
 	// Distribute width proportionally for new layout
 	assetAccountWidth := int(float64(availableWidth) * 0.45)
 	amountWidth := int(float64(availableWidth) * 0.25)
 	valueWidth := int(float64(availableWidth) * 0.30)
-	
+
 	columns := []table.Column{
 		{Title: "Asset/Account", Width: assetAccountWidth},
 		{Title: "Amount", Width: amountWidth},
@@ -70,13 +66,13 @@ func (m *Model) setupTable() {
 
 func (m *Model) buildTableRows() []table.Row {
 	var rows []table.Row
-	
+
 	// Group holdings by asset
 	assetHoldings := make(map[uint][]models.Holding)
 	for _, holding := range m.holdings {
 		assetHoldings[holding.AssetID] = append(assetHoldings[holding.AssetID], holding)
 	}
-	
+
 	// Calculate total value per asset
 	assetTotalValues := make(map[uint]float64)
 	for assetID, holdings := range assetHoldings {
@@ -87,7 +83,7 @@ func (m *Model) buildTableRows() []table.Row {
 		}
 		assetTotalValues[assetID] = totalValue
 	}
-	
+
 	// Sort assets by total value (highest first)
 	var assetIDs []uint
 	for assetID := range assetHoldings {
@@ -97,30 +93,30 @@ func (m *Model) buildTableRows() []table.Row {
 		// Sort by total value descending
 		valueI := assetTotalValues[assetIDs[i]]
 		valueJ := assetTotalValues[assetIDs[j]]
-		
+
 		// If values are equal (or both zero), sort by symbol
 		if valueI == valueJ {
 			assetI := m.getAssetByID(assetIDs[i])
 			assetJ := m.getAssetByID(assetIDs[j])
 			return assetI.Symbol < assetJ.Symbol
 		}
-		
+
 		return valueI > valueJ
 	})
-	
+
 	// Build rows with tree structure
 	for _, assetID := range assetIDs {
 		holdings := assetHoldings[assetID]
 		asset := m.getAssetByID(assetID)
 		price := m.prices[assetID]
 		totalValue := assetTotalValues[assetID]
-		
+
 		// Calculate total amount for this asset
 		totalAmount := 0.0
 		for _, holding := range holdings {
 			totalAmount += holding.Amount
 		}
-		
+
 		// Format total amount based on asset type
 		amountStr := ""
 		if asset.Type == models.AssetTypeFiat {
@@ -128,7 +124,7 @@ func (m *Model) buildTableRows() []table.Row {
 		} else {
 			amountStr = fmt.Sprintf("%.4f", totalAmount)
 		}
-		
+
 		// Add asset header row
 		assetRow := table.Row{
 			asset.Symbol,
@@ -136,19 +132,19 @@ func (m *Model) buildTableRows() []table.Row {
 			fmt.Sprintf("$%.2f", totalValue),
 		}
 		rows = append(rows, assetRow)
-		
+
 		// Sort holdings within each asset by value (highest first)
 		sort.Slice(holdings, func(i, j int) bool {
 			valueI := holdings[i].Amount * price
 			valueJ := holdings[j].Amount * price
 			return valueI > valueJ
 		})
-		
+
 		// Add account rows
 		for i, holding := range holdings {
 			account := m.getAccountByID(holding.AccountID)
 			value := holding.Amount * price
-			
+
 			// Determine tree character
 			var treeChar string
 			if i == len(holdings)-1 {
@@ -156,7 +152,7 @@ func (m *Model) buildTableRows() []table.Row {
 			} else {
 				treeChar = "├─ "
 			}
-			
+
 			// Format amount based on asset type
 			amountStr := ""
 			if asset.Type == models.AssetTypeFiat {
@@ -164,7 +160,7 @@ func (m *Model) buildTableRows() []table.Row {
 			} else {
 				amountStr = fmt.Sprintf("%.4f", holding.Amount)
 			}
-			
+
 			row := table.Row{
 				"  " + treeChar + account.Name,
 				amountStr,
@@ -173,7 +169,7 @@ func (m *Model) buildTableRows() []table.Row {
 			rows = append(rows, row)
 		}
 	}
-	
+
 	return rows
 }
 
@@ -211,9 +207,9 @@ func (m *Model) getAssetByID(id uint) models.Asset {
 
 func (m *Model) tableView() string {
 	total := m.calculateTotal()
-	
+
 	var b strings.Builder
-	
+
 	// Header with last update time
 	headerLeft := "💰 Minimal Money"
 	headerRight := fmt.Sprintf("Total: $%.2f", total)
@@ -223,7 +219,7 @@ func (m *Model) tableView() string {
 	}
 	header := headerLeft + strings.Repeat(" ", headerPadding) + headerRight
 	b.WriteString(totalStyle.Render(header) + "\n")
-	
+
 	// Last update time
 	if m.lastPriceUpdate != nil {
 		updateText := fmt.Sprintf("Last Update: %s", m.lastPriceUpdate.Format("2006-01-02 15:04:05"))
@@ -236,13 +232,13 @@ func (m *Model) tableView() string {
 	} else {
 		b.WriteString("\n")
 	}
-	
+
 	// Table
 	b.WriteString(baseStyle.Render(m.table.View()) + "\n\n")
-	
+
 	// Footer
 	footer := "[n]ew  [e]dit  [d]elete  [p]rice update  [h]istory  [q]uit"
 	b.WriteString(footer)
-	
+
 	return b.String()
 }
