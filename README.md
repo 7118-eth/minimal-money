@@ -228,7 +228,12 @@ act -j test-fast
 
 # See what actions would run (dry run)
 act -n
+
+# For Apple Silicon (M1/M2/M3) Macs
+act -P macos-latest=-self-hosted --container-architecture linux/amd64
 ```
+
+**Note for Apple Silicon users**: The default Docker images may not work correctly on ARM64 architecture. Use the command above to specify x86_64 emulation.
 
 #### Using GitHub CLI
 
