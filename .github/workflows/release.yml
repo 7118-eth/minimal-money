@@ -106,19 +106,22 @@ jobs:
         
         # Create archive
         if [ "${{ matrix.goos }}" = "windows" ]; then
-          zip "${output_name}.zip" "${output_name}"
-          echo "ASSET_NAME=${output_name}.zip" >> $GITHUB_ENV
+          archive_name="${output_name}.zip"
+          zip "${archive_name}" "${output_name}"
         else
-          tar czf "${output_name}.tar.gz" "${output_name}"
-          echo "ASSET_NAME=${output_name}.tar.gz" >> $GITHUB_ENV
+          archive_name="${output_name}.tar.gz"
+          tar czf "${archive_name}" "${output_name}"
         fi
         
         # Calculate checksum
         if [ "${{ matrix.goos }}" = "darwin" ]; then
-          shasum -a 256 "${ASSET_NAME}" > "${ASSET_NAME}.sha256"
+          shasum -a 256 "${archive_name}" > "${archive_name}.sha256"
         else
-          sha256sum "${ASSET_NAME}" > "${ASSET_NAME}.sha256"
+          sha256sum "${archive_name}" > "${archive_name}.sha256"
         fi
+        
+        # Set environment variable for upload steps
+        echo "ASSET_NAME=${archive_name}" >> $GITHUB_ENV
     
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
