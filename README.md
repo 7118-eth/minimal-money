@@ -71,7 +71,7 @@ git clone https://github.com/bioharz/minimal-money.git
 cd minimal-money
 
 # Build the application
-go build -o minimal-money cmd/budget/main.go
+make build
 
 # Run it!
 ./minimal-money
@@ -95,15 +95,18 @@ go build -o minimal-money cmd/budget/main.go
 
 ```bash
 # Run directly
-go run cmd/budget/main.go
+make run
 
 # Run tests
 make test          # All tests (including API calls)
 make test-fast     # Skip API tests
 make test-coverage # With coverage report
 
+# Clean test databases
+make test-clean
+
 # Format code
-go fmt ./...
+make fmt
 ```
 
 ## 🏗 Architecture
