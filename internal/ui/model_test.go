@@ -146,7 +146,7 @@ func TestModel_ModalInput(t *testing.T) {
 	model.initAddAssetModal()
 	
 	// Type some text
-	inputs := []string{"L", "e", "d", "g", "e", "r"}
+	inputs := []string{"h", "a", "r", "d", "w", "a", "r", "e", " ", "w", "a", "l", "l", "e", "t"}
 	for _, char := range inputs {
 		msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(char)}
 		newModel, _ := model.Update(msg)
